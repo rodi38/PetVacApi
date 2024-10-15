@@ -1,0 +1,38 @@
+# Node.js dependencies
+node_modules/
+
+# Fastify logs
+fastify.log
+
+# Mongoose logs
+mongoose.log
+
+# Environment variables
+.env
+
+# IDE files
+.vscode/
+.idea/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Build and dist files
+build/
+dist/
+
+# Coverage reports
+coverage/
+
+# Logs
+logs/
+
+# npm debug logs
+npm-debug.log*
+
+# yarn debug logs
+yarn-debug.log*
+
+# yarn error logs
+yarn-error.log*

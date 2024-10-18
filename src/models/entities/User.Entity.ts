@@ -7,6 +7,8 @@ import {
   ObjectIdColumn,
   PrimaryColumn,
   PrimaryGeneratedColumn,
+  Unique,
+  UpdateDateColumn,
 } from "typeorm";
 
 @Entity("users")
@@ -20,19 +22,20 @@ class User {
   @Column({ type: "text" })
   password!: string;
 
+  @Unique(["email"])
   @Column({ type: "text" })
   email!: string;
 
   @Column()
-  owner: ObjectId;
+  owner!: ObjectId;
 
   @Column()
-  vaccines: ObjectId[]
+  vaccines!: ObjectId[];
 
-  @Column({ type: "timestamp" })
+  @CreateDateColumn()
   createdAt: Date;
 
-  @Column({ type: "timestamp" })
+  @UpdateDateColumn()
   updatedAt: Date;
 }
 

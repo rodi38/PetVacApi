@@ -10,6 +10,6 @@ export const AppDataSource = new DataSource({
   database: process.env.MONGO_DATABASE,
   authSource: process.env.MONGO_ADMIN,
   entities: [User, Pet, Vaccine],
-  logging: false,
-  directConnection: true,
+  logging: true,
+  synchronize: false, // Set this to false
 });

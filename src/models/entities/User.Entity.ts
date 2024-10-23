@@ -17,12 +17,6 @@ class User {
 	@Column({ type: "text" })
 	email!: string;
 
-	@Column()
-	owner!: ObjectId;
-
-	@Column()
-	vaccines!: ObjectId[];
-
 	@CreateDateColumn()
 	createdAt: Date;
 

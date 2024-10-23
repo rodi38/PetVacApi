@@ -22,6 +22,13 @@ class Pet {
 	@Column({ type: "number" })
 	age!: number;
 
+    @Column("objectId")
+	owner!: ObjectId;
+
+	@Column({ type: "array" })
+	vaccines!: ObjectId[];
+
+
 	@Column({ type: "timestamp" })
 	createdAt: Date;
 

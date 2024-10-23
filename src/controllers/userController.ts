@@ -26,6 +26,7 @@ export const loginUser = async (request: FastifyRequest, reply: FastifyReply) =>
 	}
 };
 
+
 function handleError(error: unknown, reply: FastifyReply) {
 	if (error instanceof ZodError) {
 		const formattedErrors = error.errors.map((err) => ({

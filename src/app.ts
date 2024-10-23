@@ -1,8 +1,8 @@
+import "reflect-metadata";
 import * as dotenv from "dotenv";
 dotenv.config();
 
 import Fastify from "fastify";
-import "reflect-metadata";
 
 import { AppDataSource } from "./config/typeorm";
 import authRouter from "./routes/authRouter";
@@ -19,9 +19,9 @@ AppDataSource.initialize()
 		console.error("Error during Data Source initialization:", err);
 	});
 
-    app.register(authRouter, { prefix: "/auth" });
-    app.register(petRouter, { prefix: "/pets" });
-    app.register(indexRouter);
+app.register(authRouter, { prefix: "/auth" });
+app.register(petRouter, { prefix: "/pets" });
+app.register(indexRouter);
 
 const start = async () => {
 	try {

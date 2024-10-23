@@ -9,9 +9,7 @@ const petService = new PetService();
 export const createPet = async (request: FastifyRequest, reply: FastifyReply) => {
 	try {
 		const petData = petSchema.parse(request.body) as PetInput;
-		const petDataWithObjectIdOwner = { ...petData, owner: new ObjectId(petData.owner) };
-
-		const pet = await petService.create(petDataWithObjectIdOwner);
+		const pet = await petService.create(petData);
 		reply.code(201).send(pet);
 	} catch (error) {
 		handleError(error, reply);
@@ -45,9 +43,7 @@ export const updatePet = async (request: FastifyRequest<{ Params: { id: string }
 	try {
 		const { id } = request.params;
 		const updateData = updatePetSchema.parse(request.body) as UpdatePetInput;
-		const petDataWithObjectIdOwner = { ...updateData, owner: new ObjectId(id) };
-
-		const updatedPet = await petService.update(id, petDataWithObjectIdOwner);
+		const updatedPet = await petService.update(id, updateData);
 		if (updatedPet) {
 			reply.send(updatedPet);
 		} else {

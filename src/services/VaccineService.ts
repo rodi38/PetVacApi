@@ -3,90 +3,78 @@ import { AppDataSource } from "../config/typeorm";
 import { Vaccine } from "../models/entities/Vaccine.Entity";
 import { Pet } from "../models/entities/Pet.Entity";
 import { ObjectId } from "mongodb";
+import { vaccineSchema, updateVaccineSchema, VaccineInput, UpdateVaccineInput } from "../models/schemas/vaccineSchema";
 
 export class VaccineService {
-    private vaccineRepository: MongoRepository<Vaccine>;
-    private petRepository: MongoRepository<Pet>;
+	private vaccineRepository: MongoRepository<Vaccine>;
+	private petRepository: MongoRepository<Pet>;
 
-    constructor() {
-        this.vaccineRepository = AppDataSource.getMongoRepository(Vaccine);
-        this.petRepository = AppDataSource.getMongoRepository(Pet);
-    }
+	constructor() {
+		this.vaccineRepository = AppDataSource.getMongoRepository(Vaccine);
+		this.petRepository = AppDataSource.getMongoRepository(Pet);
+	}
 
-    async create(data: VaccineInput): Promise<Vaccine> {
-        const vaccine = this.vaccineRepository.create(data);
-        return this.vaccineRepository.save(vaccine);
-    }
+	async create(data: VaccineInput): Promise<Vaccine> {
+		const vaccine = this.vaccineRepository.create(data);
+		return this.vaccineRepository.save(vaccine);
+	}
 
-    async addPetToVaccine(vaccineId: string, petId: string): Promise<Vaccine> {
-        const vaccine = await this.vaccineRepository.findOneBy({ 
-            _id: new ObjectId(vaccineId) 
-        });
-        
-        if (!vaccine) {
-            throw new Error("Vaccine not found");
-        }
+	// async addPetToVaccine(vaccineId: string, petId: string): Promise<Vaccine> {
+	// 	const vaccine = await this.vaccineRepository.findOneBy({
+	// 		_id: new ObjectId(vaccineId),
+	// 	});
 
-        const pet = await this.petRepository.findOneBy({ 
-            _id: new ObjectId(petId) 
-        });
+	// 	if (!vaccine) {
+	// 		throw new Error("Vaccine not found");
+	// 	}
 
-        if (!pet) {
-            throw new Error("Pet not found");
-        }
+	// 	const pet = await this.petRepository.findOneBy({
+	// 		_id: new ObjectId(petId),
+	// 	});
 
-        // Adiciona o pet à vacina se ainda não estiver
-        if (!vaccine.pets.some(id => id.toString() === petId)) {
-            await this.vaccineRepository.updateOne(
-                { _id: vaccine._id },
-                { $push: { pets: new ObjectId(petId) } }
-            );
+	// 	if (!pet) {
+	// 		throw new Error("Pet not found");
+	// 	}
 
-            // Adiciona a vacina ao pet
-            await this.petRepository.updateOne(
-                { _id: pet._id },
-                { $push: { vaccines: vaccine._id } }
-            );
-        }
+	// 	// Adiciona o pet à vacina se ainda não estiver
+	// 	if (!vaccine.pets.some((id) => id.toString() === petId)) {
+	// 		await this.vaccineRepository.updateOne({ _id: vaccine._id }, { $push: { pets: new ObjectId(petId) } });
+	// 		// Adiciona a vacina ao pet
+	// 		await this.petRepository.updateOne({ _id: pet._id }, { $push: { vaccines: vaccine._id } });
+	// 	}
 
-        return this.vaccineRepository.findOneBy({ _id: vaccine._id }) as Promise<Vaccine>;
-    }
+	// 	return this.vaccineRepository.findOneBy({ _id: vaccine._id }) as Promise<Vaccine>;
+	// }
 
-    async removePetFromVaccine(vaccineId: string, petId: string): Promise<void> {
-        await this.vaccineRepository.updateOne(
-            { _id: new ObjectId(vaccineId) },
-            { $pull: { pets: new ObjectId(petId) } }
-        );
+	// async removePetFromVaccine(vaccineId: string, petId: string): Promise<void> {
+	// 	await this.vaccineRepository.updateOne({ _id: new ObjectId(vaccineId) }, { $pull: { pets: new ObjectId(petId) } });
 
-        await this.petRepository.updateOne(
-            { _id: new ObjectId(petId) },
-            { $pull: { vaccines: new ObjectId(vaccineId) } }
-        );
-    }
+	// 	await this.petRepository.updateOne({ _id: new ObjectId(petId) }, { $pull: { vaccines: new ObjectId(vaccineId) } });
+	// }
 
-    async findByPet(petId: string): Promise<Vaccine[]> {
-        return this.vaccineRepository.find({
-            where: {
-                pets: new ObjectId(petId)
-            }
-        });
-    }
+	async findByPet(petId: string): Promise<Vaccine[]> {
+		return this.vaccineRepository.find({
+			where: {
+				pets: new ObjectId(petId),
+			},
+		});
+	}
 
-    async findAll(): Promise<Vaccine[]> {
-        return this.vaccineRepository.find();
-    }
+	async findAll(): Promise<Vaccine[]> {
+		return this.vaccineRepository.find();
+	}
 
-    async findById(id: string): Promise<Vaccine | null> {
-        return this.vaccineRepository.findOneBy({ _id: new ObjectId(id) });
-    }
+	async findById(id: string): Promise<Vaccine | null> {
+		return this.vaccineRepository.findOneBy({ _id: new ObjectId(id) });
+	}
 
-    async update(id: string, data: UpdateVaccineInput): Promise<Vaccine | null> {
-        await this.vaccineRepository.update(id, data);
-        return this.findById(id);
-    }
+	async update(id: string, data: UpdateVaccineInput): Promise<Vaccine | null> {
+		await this.vaccineRepository.update(id, data);
+		return this.findById(id);
+	}
 
-    async delete(id: string): Promise<boolean> {
-        const result = await this.vaccineRepository.delete(id);
-        return result.affected !== 0;
-    }
+	async delete(id: string): Promise<boolean> {
+		const result = await this.vaccineRepository.delete(id);
+		return result.affected !== 0;
+	}
 }

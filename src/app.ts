@@ -3,13 +3,20 @@ import * as dotenv from "dotenv";
 dotenv.config();
 
 import Fastify from "fastify";
+import jwt from "@fastify/jwt";
+
 
 import { AppDataSource } from "./config/typeorm";
 import authRouter from "./routes/authRouter";
 import { indexRouter } from "./routes/indexRouter";
 import petRouter from "./routes/petRouter";
+import vaccineRouter from "./routes/vaccineRouter";
 
 const app = Fastify();
+
+app.register(jwt, {
+    secret: process.env.JWT_SECRET || "fallback_secret"
+  });
 
 AppDataSource.initialize()
 	.then(() => {
@@ -21,6 +28,7 @@ AppDataSource.initialize()
 
 app.register(authRouter, { prefix: "/auth" });
 app.register(petRouter, { prefix: "/pets" });
+app.register(vaccineRouter, { prefix: "/vaccines" });
 app.register(indexRouter);
 
 const start = async () => {

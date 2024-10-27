@@ -3,6 +3,7 @@ import { AppDataSource } from "../config/typeorm";
 import { User } from "../models/entities/User.Entity";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
+import { AppError } from "../utils/errorHandler";
 
 export class UserService {
 	private userRepository: MongoRepository<User>;
@@ -16,7 +17,7 @@ export class UserService {
 			where: { email },
 		});
 		if (existingUser) {
-			throw new Error("User with this email already exists");
+			throw new AppError("User with this email already exists", 400, "USER_EXISTS");
 		}
 
 		const hashedPassword = await bcrypt.hash(password, 10);
@@ -45,6 +46,4 @@ export class UserService {
 			expiresIn: process.env.JWT_EXPIRES_IN || "1h",
 		});
 	}
-
-    
 }

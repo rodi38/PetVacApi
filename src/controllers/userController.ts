@@ -1,6 +1,7 @@
 import { FastifyRequest, FastifyReply } from "fastify";
 import { UserService } from "../services/UserService";
 import { registerUserSchema, loginUserSchema, RegisterUserInput, LoginUserInput } from "../models/schemas/userSchema";
+import { handleError, AppError } from "../utils/errorHandler";
 
 import { ZodError } from "zod";
 
@@ -27,16 +28,4 @@ export const loginUser = async (request: FastifyRequest, reply: FastifyReply) =>
 };
 
 
-function handleError(error: unknown, reply: FastifyReply) {
-	if (error instanceof ZodError) {
-		const formattedErrors = error.errors.map((err) => ({
-			field: err.path.join("."),
-			message: err.message,
-		}));
-		reply.code(400).send({ errors: formattedErrors });
-	} else if (error instanceof Error) {
-		reply.code(400).send({ error: error.message });
-	} else {
-		reply.code(500).send({ error: "An unexpected error occurred" });
-	}
-}
+

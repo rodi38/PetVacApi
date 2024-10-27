@@ -2,6 +2,9 @@ import { FastifyRequest, FastifyReply } from "fastify";
 import { PetService } from "../services/PetService";
 import { petSchema, updatePetSchema, PetInput, UpdatePetInput } from "../models/schemas/petSchema";
 import { ZodError } from "zod";
+
+import { handleError, AppError } from "../utils/errorHandler";
+
 import { ObjectId } from "mongodb";
 
 const petService = new PetService();
@@ -68,16 +71,4 @@ export const deletePet = async (request: FastifyRequest<{ Params: { id: string }
 	}
 };
 
-function handleError(error: unknown, reply: FastifyReply) {
-	if (error instanceof ZodError) {
-		const formattedErrors = error.errors.map((err) => ({
-			field: err.path.join("."),
-			message: err.message,
-		}));
-		reply.code(400).send({ errors: formattedErrors });
-	} else if (error instanceof Error) {
-		reply.code(400).send({ error: error.message });
-	} else {
-		reply.code(500).send({ error: "An unexpected error occurred" });
-	}
-}
+

@@ -1,5 +1,5 @@
+// src/models/entities/Vaccine.Entity.ts
 import { ObjectId } from "mongodb";
-
 import { Column, CreateDateColumn, Entity, ObjectIdColumn, UpdateDateColumn } from "typeorm";
 
 @Entity("vaccines")
@@ -12,9 +12,6 @@ class Vaccine {
 
     @Column({ type: "text" })
     description?: string;
-
-    @Column({ type: "array" })
-    pets!: ObjectId[];
 
     @CreateDateColumn()
     createdAt: Date;

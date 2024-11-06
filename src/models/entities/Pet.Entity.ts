@@ -1,10 +1,9 @@
 import { ObjectId } from "mongodb";
-
-import { Column, CreateDateColumn, Entity, ObjectIdColumn, PrimaryColumn, PrimaryGeneratedColumn } from "typeorm";
+import { Column, CreateDateColumn, Entity, ObjectIdColumn, UpdateDateColumn } from "typeorm";
 
 @Entity("pets")
 class Pet {
-	@ObjectIdColumn({})
+	@ObjectIdColumn()
 	_id!: ObjectId;
 
 	@Column({ type: "text" })
@@ -22,17 +21,13 @@ class Pet {
 	@Column({ type: "number" })
 	age!: number;
 
-    @Column("objectId")
+	@Column("objectId")
 	owner!: ObjectId;
 
-	@Column({ type: "array" })
-	vaccines!: ObjectId[];
-
-
-	@Column({ type: "timestamp" })
+	@CreateDateColumn()
 	createdAt: Date;
 
-	@Column({ type: "timestamp" })
+	@UpdateDateColumn()
 	updatedAt: Date;
 }
 

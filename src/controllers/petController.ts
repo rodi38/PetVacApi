@@ -5,7 +5,6 @@ import { ZodError } from "zod";
 
 import { handleError, AppError } from "../utils/errorHandler";
 
-import { ObjectId } from "mongodb";
 
 const petService = new PetService();
 

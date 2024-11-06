@@ -6,6 +6,7 @@ import Fastify from "fastify";
 import jwt from "@fastify/jwt";
 
 import { AppDataSource } from "./config/typeorm";
+
 import authRouter from "./routes/authRouter";
 import { indexRouter } from "./routes/indexRouter";
 import petRouter from "./routes/petRouter";

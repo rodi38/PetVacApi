@@ -32,4 +32,12 @@ export class PetService {
 		const result = await this.petRepository.delete(id);
 		return result.affected !== 0;
 	}
+
+	async getAllPetsByOwner(ownerId: string): Promise<Pet[]> {
+		return this.petRepository.find({
+			where: {
+				owner: new ObjectId(ownerId),
+			},
+		});
+	}
 }

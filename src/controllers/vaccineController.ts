@@ -83,3 +83,13 @@ export const getPetVaccinations = async (request: FastifyRequest<{ Params: { pet
 		handleError(error, reply);
 	}
 };
+
+export const getPetVaccinesCount = async (request: FastifyRequest<{ Params: { petId: string } }>, reply: FastifyReply) => {
+	try {
+		const { petId } = request.params;
+		const count = await vaccineService.getPetVaccinesCount(petId);
+		reply.send({ count });
+	} catch (error) {
+		handleError(error, reply);
+	}
+};

@@ -27,6 +27,16 @@ export const getAllPets = async (request: FastifyRequest, reply: FastifyReply) =
 	}
 };
 
+export const getAllPetsByOwner = async (request: FastifyRequest<{ Params: { ownerId: string } }>, reply: FastifyReply) => {
+    try {
+        const { ownerId } = request.params;
+        const pets = await petService.getAllPetsByOwner(ownerId);
+        reply.send(pets);
+    } catch (error) {
+        handleError(error, reply);
+    }
+};
+
 export const getPetById = async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
 	try {
 		const { id } = request.params;

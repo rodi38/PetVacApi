@@ -4,14 +4,14 @@ import { petSchema, updatePetSchema, PetInput, UpdatePetInput } from "../models/
 import { ZodError } from "zod";
 
 import { handleError, AppError } from "../utils/errorHandler";
-
+import { ObjectId } from "mongodb";
 
 const petService = new PetService();
 
 export const createPet = async (request: FastifyRequest, reply: FastifyReply) => {
 	try {
 		const petData = petSchema.parse(request.body) as PetInput;
-		const pet = await petService.create(petData);
+		const pet = await petService.create({ ...petData, owner: new ObjectId(petData.owner) });
 		reply.code(201).send(pet);
 	} catch (error) {
 		handleError(error, reply);
@@ -45,7 +45,7 @@ export const updatePet = async (request: FastifyRequest<{ Params: { id: string }
 	try {
 		const { id } = request.params;
 		const updateData = updatePetSchema.parse(request.body) as UpdatePetInput;
-		const updatedPet = await petService.update(id, updateData);
+		const updatedPet = await petService.update(id, { ...updateData, owner: new ObjectId(updateData.owner) });
 		if (updatedPet) {
 			reply.send(updatedPet);
 		} else {
@@ -69,5 +69,3 @@ export const deletePet = async (request: FastifyRequest<{ Params: { id: string }
 		handleError(error, reply);
 	}
 };
-
-

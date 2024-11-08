@@ -8,7 +8,7 @@
 	"scripts": {
 		"test": "echo \"Error: no test specified\" && exit 1",
 		"build": "tsup src/app.ts --out-dir build --format cjs",
-		"dev": "nodemon ./src/app.ts",
+		"dev": "nodemon ./src/app.ts --",
 		"start": "node ./build/app.js"
 	},
 	"dependencies": {

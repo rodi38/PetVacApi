@@ -111,10 +111,8 @@ export class VaccineService {
 	}
 
 	async getPetVaccinesCount(petId: string): Promise<number> {
-		const count = await this.petVaccineRepository.count({
-			where: {
-				petId: new ObjectId(petId),
-			},
+		const count = await this.petVaccineRepository.countBy({
+			petId: new ObjectId(petId),
 		});
 		return count;
 	}

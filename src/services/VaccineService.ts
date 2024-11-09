@@ -5,6 +5,7 @@ import { Pet } from "../models/entities/Pet.Entity";
 import { PetVaccine } from "../models/entities/PetVaccine.Entity";
 import { ObjectId } from "mongodb";
 import { AppError } from "../utils/errorHandler";
+import { AddVaccineToPetInput } from "models/schemas/vaccineSchema";
 
 export class VaccineService {
 	private vaccineRepository: MongoRepository<Vaccine>;
@@ -40,7 +41,7 @@ export class VaccineService {
 		return result.affected !== 0;
 	}
 
-	async addVaccineToPet(vaccineId: string, petId: string, vaccinationDate: Date, notes?: string): Promise<PetVaccine> {
+	async addVaccineToPet(vaccineId: string, petId: string, data: Omit<AddVaccineToPetInput, "petId" | "vaccineId">): Promise<PetVaccine> {
 		const pet = await this.petRepository.findOneBy({ _id: new ObjectId(petId) });
 		if (!pet) {
 			throw new AppError("Pet not found", 404, "PET_NOT_FOUND");
@@ -63,15 +64,59 @@ export class VaccineService {
 			throw new AppError("This vaccine is already registered for this pet", 400, "VACCINE_ALREADY_REGISTERED");
 		}
 
-		// Criar novo registro de vacinação
+		// Processar as datas
+		const vaccinationDate = new Date(data.vaccinationDate);
+		const nextDoseDate = data.nextDoseDate ? new Date(data.nextDoseDate) : undefined;
+
+		// Criar novo registro de vacinação com todos os campos
 		const petVaccine = this.petVaccineRepository.create({
 			petId: new ObjectId(petId),
 			vaccineId: new ObjectId(vaccineId),
 			vaccinationDate,
-			notes,
+			notes: data.notes,
+			veterinarian: data.veterinarian,
+			clinic: data.clinic,
+			nextDoseDate,
 		});
 
 		return this.petVaccineRepository.save(petVaccine);
+	}
+
+	async getVaccineDetails(vaccineId: string, petId: string): Promise<{ vaccine: Vaccine; petVaccine: PetVaccine } | null> {
+		// Verifica se o pet existe
+		const pet = await this.petRepository.findOneBy({ _id: new ObjectId(petId) });
+		if (!pet) {
+			throw new AppError("Pet not found", 404, "PET_NOT_FOUND");
+		}
+
+		// Busca a vacina
+		const vaccine = await this.vaccineRepository.findOneBy({
+			_id: new ObjectId(vaccineId),
+		});
+		if (!vaccine) {
+			throw new AppError("Vaccine not found", 404, "VACCINE_NOT_FOUND");
+		}
+
+		// Busca os detalhes específicos da vacinação do pet
+		const petVaccine = await this.petVaccineRepository.findOne({
+			where: {
+				petId: new ObjectId(petId),
+				vaccineId: new ObjectId(vaccineId),
+			},
+		});
+		if (!petVaccine) {
+			throw new AppError("Vaccination record not found for this pet", 404, "VACCINATION_NOT_FOUND");
+		}
+
+		console.log({
+			vaccine,
+			petVaccine,
+		});
+
+		return {
+			vaccine,
+			petVaccine,
+		};
 	}
 
 	async findByPet(petId: string): Promise<

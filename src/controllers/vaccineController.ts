@@ -2,6 +2,7 @@ import { FastifyRequest, FastifyReply } from "fastify";
 import { VaccineService } from "../services/VaccineService";
 import { vaccineSchema, updateVaccineSchema, addVaccineToPetSchema, VaccineInput, UpdateVaccineInput, AddVaccineToPetInput } from "../models/schemas/vaccineSchema";
 import { handleError } from "../utils/errorHandler";
+import { log } from "console";
 
 const vaccineService = new VaccineService();
 
@@ -56,15 +57,38 @@ export const updateVaccine = async (request: FastifyRequest<{ Params: { id: stri
 export const addVaccineToPet = async (request: FastifyRequest, reply: FastifyReply) => {
 	try {
 		const data = addVaccineToPetSchema.parse(request.body) as AddVaccineToPetInput;
-		const vaccinationDate = new Date(data.vaccinationDate);
 
-		const result = await vaccineService.addVaccineToPet(data.vaccineId, data.petId, vaccinationDate, data.notes);
+		const result = await vaccineService.addVaccineToPet(data.vaccineId, data.petId, {
+			vaccinationDate: data.vaccinationDate,
+			notes: data.notes,
+			veterinarian: data.veterinarian,
+			clinic: data.clinic,
+			nextDoseDate: data.nextDoseDate,
+		});
 
 		reply.code(201).send({
-			// Mudado para 201 pois estamos criando um novo recurso
 			message: "Vaccine successfully registered to pet",
 			vaccination: result,
 		});
+	} catch (error) {
+		handleError(error, reply);
+	}
+};
+
+export const getVaccineDetails = async (
+	request: FastifyRequest<{
+		Params: {
+			vaccineId: string;
+			petId: string;
+		};
+	}>,
+	reply: FastifyReply,
+) => {
+	try {
+		const { vaccineId, petId } = request.params;
+
+		const details = await vaccineService.getVaccineDetails(vaccineId, petId);
+		reply.send(details);
 	} catch (error) {
 		handleError(error, reply);
 	}

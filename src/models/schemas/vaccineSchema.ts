@@ -13,9 +13,25 @@ export const updateVaccineSchema = vaccineSchema.partial();
 export const addVaccineToPetSchema = z.object({
 	petId: z.string(),
 	vaccineId: z.string(),
-	vaccinationDate: z.string().or(z.date()), // Aceita string ou objeto Date
+	vaccinationDate: z.string().or(z.date()),
 	notes: z.string().optional(),
+	veterinarian: z.string().optional(),
+	clinic: z.string().optional(),
+	nextDoseDate: z.string().or(z.date()).optional(),
 });
+
+export interface PetVaccineDetails {
+	_id: ObjectId;
+	petId: ObjectId;
+	vaccineId: ObjectId;
+	vaccinationDate: Date;
+	notes?: string;
+	veterinarian?: string;
+	clinic?: string;
+	nextDoseDate?: Date;
+	createdAt: Date;
+	updatedAt: Date;
+}
 
 export type VaccineInput = z.infer<typeof vaccineSchema>;
 export type UpdateVaccineInput = z.infer<typeof updateVaccineSchema>;

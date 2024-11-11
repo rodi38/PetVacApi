@@ -143,3 +143,25 @@ export const deletePetVaccine = async (
 		handleError(error, reply);
 	}
 };
+
+export const deleteVaccine = async (
+	request: FastifyRequest<{
+		Params: { id: string };
+	}>,
+	reply: FastifyReply,
+) => {
+	try {
+		const { id } = request.params;
+		const success = await vaccineService.deleteVaccine(id);
+
+		if (success) {
+			reply.code(204).send();
+		} else {
+			reply.code(404).send({
+				error: "Vacina não encontrada",
+			});
+		}
+	} catch (error) {
+		handleError(error, reply);
+	}
+};

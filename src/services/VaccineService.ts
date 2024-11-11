@@ -182,4 +182,34 @@ export class VaccineService {
 
 		return result.deletedCount > 0;
 	}
+
+	async deleteVaccine(id: string): Promise<boolean> {
+		try {
+			// Verificar se a vacina existe
+			const vaccine = await this.vaccineRepository.findOneBy({
+				_id: new ObjectId(id),
+			});
+
+			if (!vaccine) {
+				throw new AppError("Vacina não encontrada", 404, "VACCINE_NOT_FOUND");
+			}
+
+			// Primeiro deletar todos os registros de PetVaccine relacionados
+			const deleteVaccinationsResult = await this.petVaccineRepository.deleteMany({
+				vaccineId: new ObjectId(id),
+			});
+
+			console.log(`Deleted ${deleteVaccinationsResult.deletedCount} vaccination records`);
+
+			// Depois deletar a vacina
+			const deleteVaccineResult = await this.vaccineRepository.deleteOne({
+				_id: new ObjectId(id),
+			});
+
+			return deleteVaccineResult.deletedCount > 0;
+		} catch (error) {
+			console.error("Error deleting vaccine and related records:", error);
+			throw error;
+		}
+	}
 }

@@ -1,6 +1,6 @@
 // src/routes/vaccineRouter.ts
 import { FastifyInstance } from "fastify";
-import { createVaccine, getAllVaccines, getVaccineById, updateVaccine, addVaccineToPet, getPetVaccinations, getPetVaccinesCount, getVaccineDetails, deletePetVaccine } from "../controllers/vaccineController";
+import { createVaccine, getAllVaccines, getVaccineById, deleteVaccine, updateVaccine, addVaccineToPet, getPetVaccinations, getPetVaccinesCount, getVaccineDetails, deletePetVaccine } from "../controllers/vaccineController";
 import { authenticate } from "../middleware/authMiddleware";
 
 export default async function (fastify: FastifyInstance) {
@@ -12,6 +12,7 @@ export default async function (fastify: FastifyInstance) {
 	fastify.get("/", getAllVaccines);
 	fastify.get("/:id", getVaccineById);
 	fastify.put("/:id", updateVaccine);
+	fastify.delete("/:id", deleteVaccine);
 
 	// Rotas de relacionamento pet-vacina
 	fastify.get("/pet/:petId", getPetVaccinations);

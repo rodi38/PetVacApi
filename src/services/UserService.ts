@@ -4,6 +4,9 @@ import { User } from "../models/entities/User.Entity";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import { AppError } from "../utils/errorHandler";
+import { ObjectId } from "mongodb";
+import { UpdateUserInput } from "../models/schemas/userSchema";
+import { log } from "console";
 
 export class UserService {
 	private userRepository: MongoRepository<User>;
@@ -39,6 +42,51 @@ export class UserService {
 		const token = this.generateToken(user._id.toString());
 
 		return { user, token };
+	}
+
+	async update(userId: string, updateData: UpdateUserInput): Promise<User> {
+		const user = await this.userRepository.findOneBy({ _id: new ObjectId(userId) });
+		console.log(user);
+
+		if (!user) {
+			throw new AppError("Usuário não encontrado", 404, "USER_NOT_FOUND");
+		}
+
+		// Verifica email único se estiver sendo atualizado
+		if (updateData.email && updateData.email !== user.email) {
+			const existingUser = await this.userRepository.findOne({
+				where: { email: updateData.email },
+			});
+
+			if (existingUser) {
+				throw new AppError("Email já está em uso", 400, "EMAIL_IN_USE");
+			}
+		}
+
+		// Criar objeto de atualização
+		let updateFields: Partial<User> = {};
+
+		// Copiar campos básicos se existirem
+		if (updateData.username) updateFields.username = updateData.username;
+		if (updateData.email) updateFields.email = updateData.email;
+
+		// Tratar atualização de senha separadamente
+		if (updateData.newPassword) {
+			const isPasswordValid = await bcrypt.compare(updateData.currentPassword!, user.password);
+
+			if (!isPasswordValid) {
+				throw new AppError("Senha atual incorreta", 401, "INVALID_PASSWORD");
+			}
+
+			// Adicionar nova senha hash ao objeto de atualização
+			updateFields.password = await bcrypt.hash(updateData.newPassword, 10);
+		}
+
+		// Atualiza o usuário
+		await this.userRepository.update({ _id: new ObjectId(userId) }, updateFields);
+
+		// Retorna o usuário atualizado
+		return this.userRepository.findOneBy({ _id: new ObjectId(userId) }) as Promise<User>;
 	}
 
 	private generateToken(userId: string): string {

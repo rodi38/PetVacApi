@@ -161,4 +161,25 @@ export class VaccineService {
 		});
 		return count;
 	}
+
+	async deletePetVaccine(vaccineId: string, petId: string): Promise<boolean> {
+		// Verificar se o registro existe
+		const petVaccine = await this.petVaccineRepository.findOne({
+			where: {
+				petId: new ObjectId(petId),
+				vaccineId: new ObjectId(vaccineId),
+			},
+		});
+
+		if (!petVaccine) {
+			throw new AppError("Vaccination record not found", 404, "VACCINATION_NOT_FOUND");
+		}
+
+		const result = await this.petVaccineRepository.deleteOne({
+			petId: new ObjectId(petId),
+			vaccineId: new ObjectId(vaccineId),
+		});
+
+		return result.deletedCount > 0;
+	}
 }

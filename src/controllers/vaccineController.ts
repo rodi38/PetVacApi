@@ -57,6 +57,7 @@ export const updateVaccine = async (request: FastifyRequest<{ Params: { id: stri
 export const addVaccineToPet = async (request: FastifyRequest, reply: FastifyReply) => {
 	try {
 		const data = addVaccineToPetSchema.parse(request.body) as AddVaccineToPetInput;
+		console.log(data);
 
 		const result = await vaccineService.addVaccineToPet(data.vaccineId, data.petId, {
 			vaccinationDate: data.vaccinationDate,
@@ -113,6 +114,31 @@ export const getPetVaccinesCount = async (request: FastifyRequest<{ Params: { pe
 		const { petId } = request.params;
 		const count = await vaccineService.getPetVaccinesCount(petId);
 		reply.send({ count });
+	} catch (error) {
+		handleError(error, reply);
+	}
+};
+
+export const deletePetVaccine = async (
+	request: FastifyRequest<{
+		Params: {
+			vaccineId: string;
+			petId: string;
+		};
+	}>,
+	reply: FastifyReply,
+) => {
+	try {
+		const { vaccineId, petId } = request.params;
+		const success = await vaccineService.deletePetVaccine(vaccineId, petId);
+
+		if (success) {
+			reply.code(204).send();
+		} else {
+			reply.code(404).send({
+				error: "Vaccination record not found",
+			});
+		}
 	} catch (error) {
 		handleError(error, reply);
 	}

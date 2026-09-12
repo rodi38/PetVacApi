@@ -6,7 +6,7 @@ import { zodToJsonSchema } from "zod-to-json-schema";
 // additionalProperties: true evita que o serializer de resposta do Fastify
 // remova campos não listados (a validação/parse "de verdade" continua sendo feita pelo Zod nos controllers).
 export function toSwaggerSchema(schema: z.ZodTypeAny) {
-	const jsonSchema = zodToJsonSchema(schema, { target: "jsonSchema7", $refStrategy: "none" }) as Record<string, unknown>;
+	const jsonSchema = zodToJsonSchema(schema as any, { target: "jsonSchema7", $refStrategy: "none" }) as Record<string, unknown>;
 	delete jsonSchema.$schema;
 	if (jsonSchema.type === "object") {
 		jsonSchema.additionalProperties = true;

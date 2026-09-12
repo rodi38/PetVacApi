@@ -8,14 +8,28 @@ import swagger from "@fastify/swagger";
 import swaggerUi from "@fastify/swagger-ui";
 
 import { AppDataSource } from "./config/typeorm";
+import { registerErrorHandler } from "./middleware/errorMiddleware";
 
 import authRouter from "./routes/authRouter";
 import { indexRouter } from "./routes/indexRouter";
 import petRouter from "./routes/petRouter";
 import vaccineRouter from "./routes/vaccineRouter";
 
-const app = Fastify();
+const app = Fastify({
+	// A validação de entrada "de verdade" é feita via Zod nos controllers;
+	// os schemas nas rotas servem apenas para documentação no Swagger,
+	// então desativamos coerção/remoção automática de propriedades do Ajv.
+	ajv: {
+		customOptions: {
+			coerceTypes: false,
+			removeAdditional: false,
+			useDefaults: false,
+		},
+	},
+});
 const PORT = Number(process.env.PORT) || 5000;
+
+registerErrorHandler(app);
 
 app.register(jwt, {
 	secret: process.env.JWT_SECRET || "fallback_secret",

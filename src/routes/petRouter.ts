@@ -5,10 +5,12 @@ import { authenticate } from "../middleware/authMiddleware";
 export default async function (fastify: FastifyInstance) {
 	fastify.addHook("preHandler", authenticate);
 
-	fastify.post("/", createPet);
-	fastify.get("/", getAllPets);
-	fastify.get("/owner/:ownerId", getAllPetsByOwner);
-	fastify.get("/:id", getPetById);
-	fastify.put("/:id", updatePet);
-	fastify.delete("/:id", deletePet);
+	const schema = { tags: ["pets"], security: [{ bearerAuth: [] }] };
+
+	fastify.post("/", { schema }, createPet);
+	fastify.get("/", { schema }, getAllPets);
+	fastify.get("/owner/:ownerId", { schema }, getAllPetsByOwner);
+	fastify.get("/:id", { schema }, getPetById);
+	fastify.put("/:id", { schema }, updatePet);
+	fastify.delete("/:id", { schema }, deletePet);
 }

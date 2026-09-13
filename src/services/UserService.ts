@@ -36,7 +36,7 @@ export class UserService {
 	async login(email: string, password: string): Promise<{ user: User; token: string }> {
 		const user = await this.userRepository.findOne({ where: { email } });
 		if (!user || !(await bcrypt.compare(password, user.password))) {
-			throw new Error("Invalid credentials");
+			throw new AppError("Invalid credentials", 401, "INVALID_CREDENTIALS");
 		}
 
 		const token = this.generateToken(user._id.toString());

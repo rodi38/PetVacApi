@@ -1,7 +1,7 @@
 import { FastifyRequest, FastifyReply } from "fastify";
 import { UserService } from "../services/UserService";
 import { registerUserSchema, loginUserSchema, RegisterUserInput, LoginUserInput, UpdateUserInput, updateUserSchema } from "../models/schemas/userSchema";
-import { handleError, AppError } from "../utils/errorHandler";
+import { handleError, AppError, sendSuccess } from "../utils/errorHandler";
 
 import { ZodError } from "zod";
 
@@ -11,7 +11,7 @@ export const registerUser = async (request: FastifyRequest, reply: FastifyReply)
 	try {
 		const userData = registerUserSchema.parse(request.body) as RegisterUserInput;
 		const user = await userService.register(userData.username, userData.email, userData.password);
-		reply.code(201).send(user);
+		sendSuccess(reply, user, 201);
 	} catch (error) {
 		handleError(error, reply);
 	}
@@ -21,7 +21,7 @@ export const loginUser = async (request: FastifyRequest, reply: FastifyReply) =>
 	try {
 		const loginData = loginUserSchema.parse(request.body) as LoginUserInput;
 		const { user, token } = await userService.login(loginData.email, loginData.password);
-		reply.code(200).send({ user, token });
+		sendSuccess(reply, { user, token });
 	} catch (error) {
 		handleError(error, reply);
 	}
@@ -43,14 +43,12 @@ export const updateUser = async (
 
 		// Agora usando authenticatedUser ao invés de user
 		if (request.authenticatedUser.userId.toString() !== userId) {
-			return reply.code(403).send({
-				error: "Não autorizado a atualizar outro usuário",
-			});
+			throw new AppError("Não autorizado a atualizar outro usuário", 403, "FORBIDDEN");
 		}
 
 		const updatedUser = await userService.update(userId, updateData);
 		const { password, ...userWithoutPassword } = updatedUser;
-		reply.send(userWithoutPassword);
+		sendSuccess(reply, userWithoutPassword);
 	} catch (error) {
 		handleError(error, reply);
 	}

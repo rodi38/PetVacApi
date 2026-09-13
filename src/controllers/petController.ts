@@ -3,7 +3,7 @@ import { PetService } from "../services/PetService";
 import { petSchema, updatePetSchema, PetInput, UpdatePetInput } from "../models/schemas/petSchema";
 import { ZodError } from "zod";
 
-import { handleError, AppError } from "../utils/errorHandler";
+import { handleError, AppError, sendSuccess } from "../utils/errorHandler";
 import { ObjectId } from "mongodb";
 import { Pet } from "models/entities/Pet.Entity";
 
@@ -13,7 +13,7 @@ export const createPet = async (request: FastifyRequest, reply: FastifyReply) =>
 	try {
 		const petData = petSchema.parse(request.body) as PetInput;
 		const pet = await petService.create({ ...petData, owner: new ObjectId(petData.owner) });
-		reply.code(201).send(pet);
+		sendSuccess(reply, pet, 201);
 	} catch (error) {
 		handleError(error, reply);
 	}
@@ -22,7 +22,7 @@ export const createPet = async (request: FastifyRequest, reply: FastifyReply) =>
 export const getAllPets = async (request: FastifyRequest, reply: FastifyReply) => {
 	try {
 		const pets = await petService.findAll();
-		reply.send(pets);
+		sendSuccess(reply, pets);
 	} catch (error) {
 		handleError(error, reply);
 	}
@@ -32,7 +32,7 @@ export const getAllPetsByOwner = async (request: FastifyRequest<{ Params: { owne
 	try {
 		const { ownerId } = request.params;
 		const pets = await petService.getAllPetsByOwner(ownerId);
-		reply.send(pets);
+		sendSuccess(reply, pets);
 	} catch (error) {
 		handleError(error, reply);
 	}
@@ -43,9 +43,9 @@ export const getPetById = async (request: FastifyRequest<{ Params: { id: string 
 		const { id } = request.params;
 		const pet = await petService.findById(id);
 		if (pet) {
-			reply.send(pet);
+			sendSuccess(reply, pet);
 		} else {
-			reply.code(404).send({ error: "Pet not found" });
+			throw new AppError("Pet not found", 404, "PET_NOT_FOUND");
 		}
 	} catch (error) {
 		handleError(error, reply);
@@ -72,9 +72,9 @@ export const updatePet = async (
 		const updatedPet = await petService.update(id, updatedData as Partial<Pet>);
 
 		if (updatedPet) {
-			reply.send(updatedPet);
+			sendSuccess(reply, updatedPet);
 		} else {
-			reply.code(404).send({ error: "Pet não encontrado" });
+			throw new AppError("Pet não encontrado", 404, "PET_NOT_FOUND");
 		}
 	} catch (error) {
 		handleError(error, reply);
@@ -88,7 +88,7 @@ export const deletePet = async (request: FastifyRequest<{ Params: { id: string }
 		if (success) {
 			reply.code(204).send();
 		} else {
-			reply.code(404).send({ error: "Pet not found" });
+			throw new AppError("Pet not found", 404, "PET_NOT_FOUND");
 		}
 	} catch (error) {
 		handleError(error, reply);

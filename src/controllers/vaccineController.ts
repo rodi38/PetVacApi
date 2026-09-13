@@ -1,7 +1,7 @@
 import { FastifyRequest, FastifyReply } from "fastify";
 import { VaccineService } from "../services/VaccineService";
 import { vaccineSchema, updateVaccineSchema, addVaccineToPetSchema, VaccineInput, UpdateVaccineInput, AddVaccineToPetInput } from "../models/schemas/vaccineSchema";
-import { handleError } from "../utils/errorHandler";
+import { handleError, AppError, sendSuccess } from "../utils/errorHandler";
 import { log } from "console";
 
 const vaccineService = new VaccineService();
@@ -9,7 +9,7 @@ const vaccineService = new VaccineService();
 export const getAllVaccines = async (request: FastifyRequest, reply: FastifyReply) => {
 	try {
 		const vaccines = await vaccineService.findAll();
-		reply.send(vaccines);
+		sendSuccess(reply, vaccines);
 	} catch (error) {
 		handleError(error, reply);
 	}
@@ -19,7 +19,7 @@ export const createVaccine = async (request: FastifyRequest, reply: FastifyReply
 	try {
 		const vaccineData = vaccineSchema.parse(request.body) as VaccineInput;
 		const vaccine = await vaccineService.create(vaccineData);
-		reply.code(201).send(vaccine);
+		sendSuccess(reply, vaccine, 201);
 	} catch (error) {
 		handleError(error, reply);
 	}
@@ -30,9 +30,9 @@ export const getVaccineById = async (request: FastifyRequest<{ Params: { id: str
 		const { id } = request.params;
 		const vaccine = await vaccineService.findById(id);
 		if (vaccine) {
-			reply.send(vaccine);
+			sendSuccess(reply, vaccine);
 		} else {
-			reply.code(404).send({ error: "Vaccine not found" }); // Corrigido a mensagem de erro
+			throw new AppError("Vaccine not found", 404, "VACCINE_NOT_FOUND");
 		}
 	} catch (error) {
 		handleError(error, reply);
@@ -45,9 +45,9 @@ export const updateVaccine = async (request: FastifyRequest<{ Params: { id: stri
 		const updateData = updateVaccineSchema.parse(request.body) as UpdateVaccineInput;
 		const updatedVaccine = await vaccineService.update(id, updateData);
 		if (updatedVaccine) {
-			reply.send(updatedVaccine);
+			sendSuccess(reply, updatedVaccine);
 		} else {
-			reply.code(404).send({ error: "Vaccine not found" }); // Corrigido a mensagem de erro
+			throw new AppError("Vaccine not found", 404, "VACCINE_NOT_FOUND");
 		}
 	} catch (error) {
 		handleError(error, reply);
@@ -57,7 +57,6 @@ export const updateVaccine = async (request: FastifyRequest<{ Params: { id: stri
 export const addVaccineToPet = async (request: FastifyRequest, reply: FastifyReply) => {
 	try {
 		const data = addVaccineToPetSchema.parse(request.body) as AddVaccineToPetInput;
-		console.log(data);
 
 		const result = await vaccineService.addVaccineToPet(data.vaccineId, data.petId, {
 			vaccinationDate: data.vaccinationDate,
@@ -67,10 +66,7 @@ export const addVaccineToPet = async (request: FastifyRequest, reply: FastifyRep
 			nextDoseDate: data.nextDoseDate,
 		});
 
-		reply.code(201).send({
-			message: "Vaccine successfully registered to pet",
-			vaccination: result,
-		});
+		sendSuccess(reply, result, 201);
 	} catch (error) {
 		handleError(error, reply);
 	}
@@ -89,7 +85,7 @@ export const getVaccineDetails = async (
 		const { vaccineId, petId } = request.params;
 
 		const details = await vaccineService.getVaccineDetails(vaccineId, petId);
-		reply.send(details);
+		sendSuccess(reply, details);
 	} catch (error) {
 		handleError(error, reply);
 	}
@@ -99,7 +95,7 @@ export const getPetVaccinations = async (request: FastifyRequest<{ Params: { pet
 	try {
 		const { petId } = request.params;
 		const vaccinations = await vaccineService.findByPet(petId);
-		reply.send({
+		sendSuccess(reply, {
 			petId,
 			vaccinations,
 			totalVaccinations: vaccinations.length,
@@ -113,7 +109,7 @@ export const getPetVaccinesCount = async (request: FastifyRequest<{ Params: { pe
 	try {
 		const { petId } = request.params;
 		const count = await vaccineService.getPetVaccinesCount(petId);
-		reply.send({ count });
+		sendSuccess(reply, { count });
 	} catch (error) {
 		handleError(error, reply);
 	}
@@ -135,9 +131,7 @@ export const deletePetVaccine = async (
 		if (success) {
 			reply.code(204).send();
 		} else {
-			reply.code(404).send({
-				error: "Vaccination record not found",
-			});
+			throw new AppError("Vaccination record not found", 404, "VACCINATION_NOT_FOUND");
 		}
 	} catch (error) {
 		handleError(error, reply);
@@ -157,9 +151,7 @@ export const deleteVaccine = async (
 		if (success) {
 			reply.code(204).send();
 		} else {
-			reply.code(404).send({
-				error: "Vacina não encontrada",
-			});
+			throw new AppError("Vacina não encontrada", 404, "VACCINE_NOT_FOUND");
 		}
 	} catch (error) {
 		handleError(error, reply);

@@ -6,8 +6,6 @@ export const vaccineSchema = z.object({
 	name: z.string().min(1, "Nome da vacina é obrigatório").max(50, "Nome da vacina não pode exceder 50 caracteres").trim(),
 
 	description: z.string().max(500, "Descrição não pode exceder 500 caracteres").optional(),
-
-	pets: z.array(z.string().regex(/^[0-9a-fA-F]{24}$/, "Formato de ID do pet inválido")).optional(),
 });
 
 export const updateVaccineSchema = vaccineSchema.partial();

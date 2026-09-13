@@ -6,7 +6,10 @@ import { registerUserSchema, loginUserSchema, updateUserSchema } from "../models
 import { toSwaggerSchema, objectIdParam, successEnvelopeSchema, errorEnvelopeSchema } from "../utils/swaggerSchemas";
 
 export default async function (fastify: FastifyInstance) {
+	const bruteForceLimit = { rateLimit: { max: 5, timeWindow: "1 minute" } };
+
 	fastify.post("/register", {
+		config: bruteForceLimit,
 		schema: {
 			tags: ["auth"],
 			summary: "Cria um novo usuário",
@@ -20,6 +23,7 @@ export default async function (fastify: FastifyInstance) {
 	});
 
 	fastify.post("/login", {
+		config: bruteForceLimit,
 		schema: {
 			tags: ["auth"],
 			summary: "Autentica um usuário e retorna um token JWT",

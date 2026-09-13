@@ -8,6 +8,6 @@ export function registerErrorHandler(app: FastifyInstance) {
 	});
 
 	app.setNotFoundHandler((request, reply) => {
-		reply.code(404).send({ success: false, data: null, error: { message: "Route not found" } });
+		reply.code(404).send({ success: false, data: null, error: { message: "Rota não encontrada" } });
 	});
 }

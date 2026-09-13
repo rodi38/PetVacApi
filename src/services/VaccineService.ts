@@ -41,15 +41,21 @@ export class VaccineService {
 		return result.affected !== 0;
 	}
 
-	async addVaccineToPet(vaccineId: string, petId: string, data: Omit<AddVaccineToPetInput, "petId" | "vaccineId">): Promise<PetVaccine> {
+	private async findOwnedPetOrThrow(petId: string, ownerId: ObjectId): Promise<Pet> {
 		const pet = await this.petRepository.findOneBy({ _id: new ObjectId(petId) });
-		if (!pet) {
-			throw new AppError("Pet not found", 404, "PET_NOT_FOUND");
+		if (!pet || !pet.owner.equals(ownerId)) {
+			// 404 em ambos os casos para não revelar a existência de pets de outros usuários (IDOR).
+			throw new AppError("Pet não encontrado", 404, "PET_NOT_FOUND");
 		}
+		return pet;
+	}
+
+	async addVaccineToPet(vaccineId: string, petId: string, ownerId: ObjectId, data: Omit<AddVaccineToPetInput, "petId" | "vaccineId">): Promise<PetVaccine> {
+		await this.findOwnedPetOrThrow(petId, ownerId);
 
 		const vaccine = await this.vaccineRepository.findOneBy({ _id: new ObjectId(vaccineId) });
 		if (!vaccine) {
-			throw new AppError("Vaccine not found", 404, "VACCINE_NOT_FOUND");
+			throw new AppError("Vacina não encontrada", 404, "VACCINE_NOT_FOUND");
 		}
 
 		// Verificar se a vacina já foi aplicada neste pet
@@ -61,7 +67,7 @@ export class VaccineService {
 		});
 
 		if (existingVaccination) {
-			throw new AppError("This vaccine is already registered for this pet", 400, "VACCINE_ALREADY_REGISTERED");
+			throw new AppError("Esta vacina já está registrada para este pet", 400, "VACCINE_ALREADY_REGISTERED");
 		}
 
 		// Processar as datas
@@ -82,19 +88,15 @@ export class VaccineService {
 		return this.petVaccineRepository.save(petVaccine);
 	}
 
-	async getVaccineDetails(vaccineId: string, petId: string): Promise<{ vaccine: Vaccine; petVaccine: PetVaccine } | null> {
-		// Verifica se o pet existe
-		const pet = await this.petRepository.findOneBy({ _id: new ObjectId(petId) });
-		if (!pet) {
-			throw new AppError("Pet not found", 404, "PET_NOT_FOUND");
-		}
+	async getVaccineDetails(vaccineId: string, petId: string, ownerId: ObjectId): Promise<{ vaccine: Vaccine; petVaccine: PetVaccine } | null> {
+		await this.findOwnedPetOrThrow(petId, ownerId);
 
 		// Busca a vacina
 		const vaccine = await this.vaccineRepository.findOneBy({
 			_id: new ObjectId(vaccineId),
 		});
 		if (!vaccine) {
-			throw new AppError("Vaccine not found", 404, "VACCINE_NOT_FOUND");
+			throw new AppError("Vacina não encontrada", 404, "VACCINE_NOT_FOUND");
 		}
 
 		// Busca os detalhes específicos da vacinação do pet
@@ -105,7 +107,7 @@ export class VaccineService {
 			},
 		});
 		if (!petVaccine) {
-			throw new AppError("Vaccination record not found for this pet", 404, "VACCINATION_NOT_FOUND");
+			throw new AppError("Registro de vacinação não encontrado para este pet", 404, "VACCINATION_NOT_FOUND");
 		}
 
 		return {
@@ -114,18 +116,17 @@ export class VaccineService {
 		};
 	}
 
-	async findByPet(petId: string): Promise<
+	async findByPet(
+		petId: string,
+		ownerId: ObjectId,
+	): Promise<
 		{
 			vaccine: Vaccine;
 			vaccinationDate: Date;
 			notes?: string;
 		}[]
 	> {
-		// Verificar se o pet existe
-		const pet = await this.petRepository.findOneBy({ _id: new ObjectId(petId) });
-		if (!pet) {
-			throw new AppError("Pet not found", 404, "PET_NOT_FOUND");
-		}
+		await this.findOwnedPetOrThrow(petId, ownerId);
 
 		// Buscar todas as vacinações do pet
 		const petVaccinations = await this.petVaccineRepository.find({
@@ -150,14 +151,17 @@ export class VaccineService {
 		return vaccinations;
 	}
 
-	async getPetVaccinesCount(petId: string): Promise<number> {
+	async getPetVaccinesCount(petId: string, ownerId: ObjectId): Promise<number> {
+		await this.findOwnedPetOrThrow(petId, ownerId);
 		const count = await this.petVaccineRepository.countBy({
 			petId: new ObjectId(petId),
 		});
 		return count;
 	}
 
-	async deletePetVaccine(vaccineId: string, petId: string): Promise<boolean> {
+	async deletePetVaccine(vaccineId: string, petId: string, ownerId: ObjectId): Promise<boolean> {
+		await this.findOwnedPetOrThrow(petId, ownerId);
+
 		// Verificar se o registro existe
 		const petVaccine = await this.petVaccineRepository.findOne({
 			where: {
@@ -167,7 +171,7 @@ export class VaccineService {
 		});
 
 		if (!petVaccine) {
-			throw new AppError("Vaccination record not found", 404, "VACCINATION_NOT_FOUND");
+			throw new AppError("Registro de vacinação não encontrado", 404, "VACCINATION_NOT_FOUND");
 		}
 
 		const result = await this.petVaccineRepository.deleteOne({

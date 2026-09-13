@@ -26,7 +26,7 @@ export function handleError(error: unknown, reply: FastifyReply) {
         return reply.code(400).send({
             success: false,
             data: null,
-            error: { message: "Validation error", details: formattedErrors },
+            error: { message: "Erro de validação", details: formattedErrors },
         });
     }
 
@@ -39,23 +39,25 @@ export function handleError(error: unknown, reply: FastifyReply) {
         });
     }
 
-    // Erros genéricos
-    if (error instanceof Error) {
-        // Log do erro para debugging
-        console.error(error);
-
-        return reply.code(400).send({
+    // Erros conhecidos do próprio Fastify/plugins (rate-limit, payload/JSON malformado,
+    // etc.) já vêm com um statusCode de cliente (4xx) e mensagem segura para expor.
+    const statusCode = (error as { statusCode?: number })?.statusCode;
+    if (statusCode && statusCode >= 400 && statusCode < 500) {
+        const message = error instanceof Error ? error.message : "Requisição inválida";
+        return reply.code(statusCode).send({
             success: false,
             data: null,
-            error: { message: error.message },
+            error: { message },
         });
     }
 
-    // Erros desconhecidos
-    console.error('Unknown error:', error);
+    // Erros genéricos/inesperados (driver do Mongo, TypeORM, etc.): nunca ecoar
+    // error.message ao cliente, pois pode vazar detalhes internos de implementação,
+    // e sempre como 500 — não é uma falha do cliente.
+    console.error(error);
     return reply.code(500).send({
         success: false,
         data: null,
-        error: { message: "An unexpected error occurred" },
+        error: { message: "Ocorreu um erro inesperado" },
     });
 }

@@ -3,10 +3,13 @@ import "reflect-metadata";
 import Fastify from "fastify";
 import swagger from "@fastify/swagger";
 import swaggerUi from "@fastify/swagger-ui";
+import helmet from "@fastify/helmet";
+import rateLimit from "@fastify/rate-limit";
 
 import { AppDataSource } from "./config/typeorm";
 import { env } from "./config/env";
 import { registerErrorHandler } from "./middleware/errorMiddleware";
+import { ensureIndexes } from "./config/ensureIndexes";
 
 import authRouter from "./routes/authRouter";
 import { indexRouter } from "./routes/indexRouter";
@@ -14,6 +17,7 @@ import petRouter from "./routes/petRouter";
 import vaccineRouter from "./routes/vaccineRouter";
 
 const app = Fastify({
+	logger: true,
 	// A validação de entrada "de verdade" é feita via Zod nos controllers;
 	// os schemas nas rotas servem apenas para documentação no Swagger,
 	// então desativamos coerção/remoção automática de propriedades do Ajv.
@@ -28,6 +32,12 @@ const app = Fastify({
 const PORT = env.PORT;
 
 registerErrorHandler(app);
+
+app.register(helmet);
+app.register(rateLimit, {
+	max: 100,
+	timeWindow: "1 minute",
+});
 
 app.register(swagger, {
 	openapi: {
@@ -57,14 +67,6 @@ app.register(swaggerUi, {
 	routePrefix: "/docs",
 });
 
-AppDataSource.initialize()
-	.then(() => {
-		console.log("Data Source has been initialized!");
-	})
-	.catch((err) => {
-		console.error("Error during Data Source initialization:", err);
-	});
-
 const API_PREFIX = "/api/v1";
 
 app.register(authRouter, { prefix: `${API_PREFIX}/auth` });
@@ -74,12 +76,36 @@ app.register(indexRouter, { prefix: API_PREFIX });
 
 const start = async () => {
 	try {
+		// Falha rápido no boot se o Mongo não estiver acessível, em vez de subir
+		// o servidor e só falhar depois, em cada requisição, silenciosamente.
+		await AppDataSource.initialize();
+		app.log.info("Data Source has been initialized!");
+
+		try {
+			await ensureIndexes();
+		} catch (err) {
+			// Não derruba o servidor por isso: normalmente indica dado duplicado
+			// pré-existente que precisa ser limpo manualmente antes de reforçar o índice.
+			app.log.error(err, "Failed to ensure database indexes");
+		}
+
 		await app.listen({ port: PORT, host: "0.0.0.0" });
-		console.log(`Server started on http://localhost: ${PORT}`);
 	} catch (err) {
 		app.log.error(err);
 		process.exit(1);
 	}
 };
+
+async function shutdown(signal: string) {
+	app.log.info(`Received ${signal}, shutting down gracefully`);
+	await app.close();
+	if (AppDataSource.isInitialized) {
+		await AppDataSource.destroy();
+	}
+	process.exit(0);
+}
+
+process.on("SIGTERM", () => void shutdown("SIGTERM"));
+process.on("SIGINT", () => void shutdown("SIGINT"));
 
 start();

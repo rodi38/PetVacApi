@@ -17,6 +17,10 @@ class User {
 	@Column({ type: "text" })
 	email!: string;
 
+	// Usado para invalidar tokens JWT emitidos antes da troca de senha (ver authMiddleware).
+	@Column({ type: "date", nullable: true })
+	passwordChangedAt?: Date;
+
 	@CreateDateColumn()
 	createdAt: Date;
 

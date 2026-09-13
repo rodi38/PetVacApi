@@ -19,8 +19,6 @@ export const petSchema = z.object({
 		.int("Idade deve ser um número inteiro")
 		.positive("Idade deve ser positiva")
 		.max(50, "Por favor, verifique o valor da idade"),
-
-	owner: z.string().regex(/^[0-9a-fA-F]{24}$/, "Formato de ID do proprietário inválido"),
 });
 
 // export const updatePetSchema = petSchema.partial().extend({

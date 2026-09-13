@@ -22,7 +22,7 @@ export const getVaccineById = async (request: FastifyRequest<{ Params: { id: str
 	if (vaccine) {
 		sendSuccess(reply, vaccine);
 	} else {
-		throw new AppError("Vaccine not found", 404, "VACCINE_NOT_FOUND");
+		throw new AppError("Vacina não encontrada", 404, "VACCINE_NOT_FOUND");
 	}
 };
 
@@ -33,14 +33,14 @@ export const updateVaccine = async (request: FastifyRequest<{ Params: { id: stri
 	if (updatedVaccine) {
 		sendSuccess(reply, updatedVaccine);
 	} else {
-		throw new AppError("Vaccine not found", 404, "VACCINE_NOT_FOUND");
+		throw new AppError("Vacina não encontrada", 404, "VACCINE_NOT_FOUND");
 	}
 };
 
 export const addVaccineToPet = async (request: FastifyRequest, reply: FastifyReply) => {
 	const data = addVaccineToPetSchema.parse(request.body) as AddVaccineToPetInput;
 
-	const result = await vaccineService.addVaccineToPet(data.vaccineId, data.petId, {
+	const result = await vaccineService.addVaccineToPet(data.vaccineId, data.petId, request.authenticatedUser.userId, {
 		vaccinationDate: data.vaccinationDate,
 		notes: data.notes,
 		veterinarian: data.veterinarian,
@@ -62,13 +62,13 @@ export const getVaccineDetails = async (
 ) => {
 	const { vaccineId, petId } = request.params;
 
-	const details = await vaccineService.getVaccineDetails(vaccineId, petId);
+	const details = await vaccineService.getVaccineDetails(vaccineId, petId, request.authenticatedUser.userId);
 	sendSuccess(reply, details);
 };
 
 export const getPetVaccinations = async (request: FastifyRequest<{ Params: { petId: string } }>, reply: FastifyReply) => {
 	const { petId } = request.params;
-	const vaccinations = await vaccineService.findByPet(petId);
+	const vaccinations = await vaccineService.findByPet(petId, request.authenticatedUser.userId);
 	sendSuccess(reply, {
 		petId,
 		vaccinations,
@@ -78,7 +78,7 @@ export const getPetVaccinations = async (request: FastifyRequest<{ Params: { pet
 
 export const getPetVaccinesCount = async (request: FastifyRequest<{ Params: { petId: string } }>, reply: FastifyReply) => {
 	const { petId } = request.params;
-	const count = await vaccineService.getPetVaccinesCount(petId);
+	const count = await vaccineService.getPetVaccinesCount(petId, request.authenticatedUser.userId);
 	sendSuccess(reply, { count });
 };
 
@@ -92,12 +92,12 @@ export const deletePetVaccine = async (
 	reply: FastifyReply,
 ) => {
 	const { vaccineId, petId } = request.params;
-	const success = await vaccineService.deletePetVaccine(vaccineId, petId);
+	const success = await vaccineService.deletePetVaccine(vaccineId, petId, request.authenticatedUser.userId);
 
 	if (success) {
 		reply.code(204).send();
 	} else {
-		throw new AppError("Vaccination record not found", 404, "VACCINATION_NOT_FOUND");
+		throw new AppError("Registro de vacinação não encontrado", 404, "VACCINATION_NOT_FOUND");
 	}
 };
 

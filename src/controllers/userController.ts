@@ -1,7 +1,7 @@
 import { FastifyRequest, FastifyReply } from "fastify";
 import { UserService } from "../services/UserService";
 import { registerUserSchema, loginUserSchema, RegisterUserInput, LoginUserInput, UpdateUserInput, updateUserSchema } from "../models/schemas/userSchema";
-import { handleError, AppError, sendSuccess } from "../utils/errorHandler";
+import { AppError, sendSuccess } from "../utils/errorHandler";
 import { User } from "../models/entities/User.Entity";
 
 const userService = new UserService();
@@ -12,23 +12,15 @@ function toSafeUser(user: User) {
 }
 
 export const registerUser = async (request: FastifyRequest, reply: FastifyReply) => {
-	try {
-		const userData = registerUserSchema.parse(request.body) as RegisterUserInput;
-		const user = await userService.register(userData.username, userData.email, userData.password);
-		sendSuccess(reply, toSafeUser(user), 201);
-	} catch (error) {
-		handleError(error, reply);
-	}
+	const userData = registerUserSchema.parse(request.body) as RegisterUserInput;
+	const user = await userService.register(userData.username, userData.email, userData.password);
+	sendSuccess(reply, toSafeUser(user), 201);
 };
 
 export const loginUser = async (request: FastifyRequest, reply: FastifyReply) => {
-	try {
-		const loginData = loginUserSchema.parse(request.body) as LoginUserInput;
-		const { user, token } = await userService.login(loginData.email, loginData.password);
-		sendSuccess(reply, { user: toSafeUser(user), token });
-	} catch (error) {
-		handleError(error, reply);
-	}
+	const loginData = loginUserSchema.parse(request.body) as LoginUserInput;
+	const { user, token } = await userService.login(loginData.email, loginData.password);
+	sendSuccess(reply, { user: toSafeUser(user), token });
 };
 export const updateUser = async (
 	request: FastifyRequest<{
@@ -37,18 +29,14 @@ export const updateUser = async (
 	}>,
 	reply: FastifyReply,
 ) => {
-	try {
-		const { userId } = request.params;
-		const updateData = updateUserSchema.parse(request.body);
+	const { userId } = request.params;
+	const updateData = updateUserSchema.parse(request.body);
 
-		// Agora usando authenticatedUser ao invés de user
-		if (request.authenticatedUser.userId.toString() !== userId) {
-			throw new AppError("Não autorizado a atualizar outro usuário", 403, "FORBIDDEN");
-		}
-
-		const updatedUser = await userService.update(userId, updateData);
-		sendSuccess(reply, toSafeUser(updatedUser));
-	} catch (error) {
-		handleError(error, reply);
+	// Agora usando authenticatedUser ao invés de user
+	if (request.authenticatedUser.userId.toString() !== userId) {
+		throw new AppError("Não autorizado a atualizar outro usuário", 403, "FORBIDDEN");
 	}
+
+	const updatedUser = await userService.update(userId, updateData);
+	sendSuccess(reply, toSafeUser(updatedUser));
 };

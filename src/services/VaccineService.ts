@@ -5,7 +5,7 @@ import { Pet } from "../models/entities/Pet.Entity";
 import { PetVaccine } from "../models/entities/PetVaccine.Entity";
 import { ObjectId } from "mongodb";
 import { AppError } from "../utils/errorHandler";
-import { AddVaccineToPetInput } from "models/schemas/vaccineSchema";
+import { AddVaccineToPetInput } from "../models/schemas/vaccineSchema";
 
 export class VaccineService {
 	private vaccineRepository: MongoRepository<Vaccine>;

@@ -3,7 +3,7 @@ import { FastifyInstance } from "fastify";
 import { createVaccine, getAllVaccines, getVaccineById, deleteVaccine, updateVaccine, addVaccineToPet, getPetVaccinations, getPetVaccinesCount, getVaccineDetails, deletePetVaccine } from "../controllers/vaccineController";
 import { authenticate } from "../middleware/authMiddleware";
 import { vaccineSchema, updateVaccineSchema, addVaccineToPetSchema } from "../models/schemas/vaccineSchema";
-import { toSwaggerSchema, objectIdParam } from "../utils/swaggerSchemas";
+import { toSwaggerSchema, objectIdParam, objectIdParams } from "../utils/swaggerSchemas";
 
 export default async function (fastify: FastifyInstance) {
 	// Adicionar autenticação para todas as rotas
@@ -44,52 +44,36 @@ export default async function (fastify: FastifyInstance) {
 		handler: deleteVaccine,
 	});
 
-	// Rotas de relacionamento pet-vacina
-	fastify.get("/pet/:petId", {
+	// Rotas de relacionamento pet-vacina — ordem consistente: quando os dois IDs
+	// aparecem na URL, vaccineId sempre vem antes de "pets/:petId".
+	fastify.get("/pets/:petId", {
 		schema: { ...base, summary: "Lista as vacinações de um pet", params: objectIdParam("petId", "ID do pet") },
 		handler: getPetVaccinations,
 	});
 
-	fastify.get("/pet/:petId/count", {
+	fastify.get("/pets/:petId/count", {
 		schema: { ...base, summary: "Retorna a quantidade de vacinações de um pet", params: objectIdParam("petId", "ID do pet") },
 		handler: getPetVaccinesCount,
 	});
 
-	fastify.post("/pet/add", {
+	fastify.post("/pets", {
 		schema: { ...base, summary: "Registra a aplicação de uma vacina em um pet", body: toSwaggerSchema(addVaccineToPetSchema) },
 		attachValidation: true,
 		handler: addVaccineToPet,
 	});
 
-	fastify.get("/details/:vaccineId/pet/:petId", {
-		schema: {
-			...base,
-			summary: "Busca os detalhes de uma vacinação de um pet",
-			params: {
-				type: "object",
-				properties: {
-					vaccineId: { type: "string", pattern: "^[0-9a-fA-F]{24}$", description: "ID do tipo de vacina" },
-					petId: { type: "string", pattern: "^[0-9a-fA-F]{24}$", description: "ID do pet" },
-				},
-				required: ["vaccineId", "petId"],
-			},
-		},
+	const vaccinePetParams = objectIdParams([
+		{ name: "vaccineId", description: "ID do tipo de vacina" },
+		{ name: "petId", description: "ID do pet" },
+	]);
+
+	fastify.get("/:vaccineId/pets/:petId", {
+		schema: { ...base, summary: "Busca os detalhes de uma vacinação de um pet", params: vaccinePetParams },
 		handler: getVaccineDetails,
 	});
 
-	fastify.delete("/pet/:petId/vaccine/:vaccineId", {
-		schema: {
-			...base,
-			summary: "Remove o registro de vacinação de um pet",
-			params: {
-				type: "object",
-				properties: {
-					petId: { type: "string", pattern: "^[0-9a-fA-F]{24}$", description: "ID do pet" },
-					vaccineId: { type: "string", pattern: "^[0-9a-fA-F]{24}$", description: "ID do tipo de vacina" },
-				},
-				required: ["petId", "vaccineId"],
-			},
-		},
+	fastify.delete("/:vaccineId/pets/:petId", {
+		schema: { ...base, summary: "Remove o registro de vacinação de um pet", params: vaccinePetParams },
 		handler: deletePetVaccine,
 	});
 }

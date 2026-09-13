@@ -4,14 +4,20 @@ import { registerUserSchema, loginUserSchema, RegisterUserInput, LoginUserInput,
 import { handleError, AppError, sendSuccess } from "../utils/errorHandler";
 
 import { ZodError } from "zod";
+import { User } from "../models/entities/User.Entity";
 
 const userService = new UserService();
+
+function toSafeUser(user: User) {
+	const { password, ...safeUser } = user;
+	return safeUser;
+}
 
 export const registerUser = async (request: FastifyRequest, reply: FastifyReply) => {
 	try {
 		const userData = registerUserSchema.parse(request.body) as RegisterUserInput;
 		const user = await userService.register(userData.username, userData.email, userData.password);
-		sendSuccess(reply, user, 201);
+		sendSuccess(reply, toSafeUser(user), 201);
 	} catch (error) {
 		handleError(error, reply);
 	}
@@ -21,7 +27,7 @@ export const loginUser = async (request: FastifyRequest, reply: FastifyReply) =>
 	try {
 		const loginData = loginUserSchema.parse(request.body) as LoginUserInput;
 		const { user, token } = await userService.login(loginData.email, loginData.password);
-		sendSuccess(reply, { user, token });
+		sendSuccess(reply, { user: toSafeUser(user), token });
 	} catch (error) {
 		handleError(error, reply);
 	}
@@ -47,8 +53,7 @@ export const updateUser = async (
 		}
 
 		const updatedUser = await userService.update(userId, updateData);
-		const { password, ...userWithoutPassword } = updatedUser;
-		sendSuccess(reply, userWithoutPassword);
+		sendSuccess(reply, toSafeUser(updatedUser));
 	} catch (error) {
 		handleError(error, reply);
 	}

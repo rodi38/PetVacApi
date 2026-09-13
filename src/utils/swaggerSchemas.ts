@@ -15,11 +15,13 @@ export function toSwaggerSchema(schema: z.ZodTypeAny) {
 }
 
 export function objectIdParam(name: string, description: string) {
+	return objectIdParams([{ name, description }]);
+}
+
+export function objectIdParams(params: { name: string; description: string }[]) {
 	return {
 		type: "object",
-		properties: {
-			[name]: { type: "string", pattern: "^[0-9a-fA-F]{24}$", description },
-		},
-		required: [name],
+		properties: Object.fromEntries(params.map(({ name, description }) => [name, { type: "string", pattern: "^[0-9a-fA-F]{24}$", description }])),
+		required: params.map(({ name }) => name),
 	};
 }

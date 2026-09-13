@@ -13,7 +13,6 @@
 		"postinstall": "patch-package"
 	},
 	"dependencies": {
-		"@fastify/jwt": "^9.0.1",
 		"@fastify/swagger": "^9.8.1",
 		"@fastify/swagger-ui": "^6.1.1",
 		"@types/cors": "^2.8.17",

@@ -7,6 +7,7 @@ import { AppError } from "../utils/errorHandler";
 import { ObjectId } from "mongodb";
 import { UpdateUserInput } from "../models/schemas/userSchema";
 import { log } from "console";
+import { env } from "../config/env";
 
 export class UserService {
 	private userRepository: MongoRepository<User>;
@@ -90,8 +91,8 @@ export class UserService {
 	}
 
 	private generateToken(userId: string): string {
-		return jwt.sign({ userId }, process.env.JWT_SECRET || "fallback_secret", {
-			expiresIn: process.env.JWT_EXPIRES_IN || "1h",
+		return jwt.sign({ userId }, env.JWT_SECRET, {
+			expiresIn: env.JWT_EXPIRES_IN,
 		});
 	}
 }

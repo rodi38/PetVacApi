@@ -1,13 +1,11 @@
 import "reflect-metadata";
-import * as dotenv from "dotenv";
-dotenv.config();
 
 import Fastify from "fastify";
-import jwt from "@fastify/jwt";
 import swagger from "@fastify/swagger";
 import swaggerUi from "@fastify/swagger-ui";
 
 import { AppDataSource } from "./config/typeorm";
+import { env } from "./config/env";
 import { registerErrorHandler } from "./middleware/errorMiddleware";
 
 import authRouter from "./routes/authRouter";
@@ -27,13 +25,9 @@ const app = Fastify({
 		},
 	},
 });
-const PORT = Number(process.env.PORT) || 5000;
+const PORT = env.PORT;
 
 registerErrorHandler(app);
-
-app.register(jwt, {
-	secret: process.env.JWT_SECRET || "fallback_secret",
-});
 
 app.register(swagger, {
 	openapi: {
@@ -71,10 +65,12 @@ AppDataSource.initialize()
 		console.error("Error during Data Source initialization:", err);
 	});
 
-app.register(authRouter, { prefix: "/auth" });
-app.register(petRouter, { prefix: "/pets" });
-app.register(vaccineRouter, { prefix: "/vaccines" });
-app.register(indexRouter);
+const API_PREFIX = "/api/v1";
+
+app.register(authRouter, { prefix: `${API_PREFIX}/auth` });
+app.register(petRouter, { prefix: `${API_PREFIX}/pets` });
+app.register(vaccineRouter, { prefix: `${API_PREFIX}/vaccines` });
+app.register(indexRouter, { prefix: API_PREFIX });
 
 const start = async () => {
 	try {

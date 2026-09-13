@@ -24,9 +24,12 @@ export const registerUserSchema = z.object({
 		.string({
 			required_error: "Senha é obrigatória",
 		})
-		.min(6, "Senha deve ter pelo menos 6 caracteres")
+		.min(8, "Senha deve ter pelo menos 8 caracteres")
 		.max(100, "Senha não pode exceder 100 caracteres")
-		.regex(/[0-9]/, "Senha deve conter pelo menos um número"),
+		.regex(/[a-z]/, "Senha deve conter pelo menos uma letra minúscula")
+		.regex(/[A-Z]/, "Senha deve conter pelo menos uma letra maiúscula")
+		.regex(/[0-9]/, "Senha deve conter pelo menos um número")
+		.regex(/[^a-zA-Z0-9]/, "Senha deve conter pelo menos um símbolo"),
 });
 
 export const updateUserSchema = z
@@ -42,7 +45,15 @@ export const updateUserSchema = z
 
 		currentPassword: z.string().optional(),
 
-		newPassword: z.string().min(6, "Nova senha deve ter pelo menos 6 caracteres").regex(/[0-9]/, "Nova senha deve conter pelo menos um número").optional(),
+		newPassword: z
+			.string()
+			.min(8, "Nova senha deve ter pelo menos 8 caracteres")
+			.max(100, "Nova senha não pode exceder 100 caracteres")
+			.regex(/[a-z]/, "Nova senha deve conter pelo menos uma letra minúscula")
+			.regex(/[A-Z]/, "Nova senha deve conter pelo menos uma letra maiúscula")
+			.regex(/[0-9]/, "Nova senha deve conter pelo menos um número")
+			.regex(/[^a-zA-Z0-9]/, "Nova senha deve conter pelo menos um símbolo")
+			.optional(),
 	})
 	.refine(
 		(data) => {

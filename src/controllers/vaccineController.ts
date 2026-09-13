@@ -1,6 +1,6 @@
 import { FastifyRequest, FastifyReply } from "fastify";
 import { VaccineService } from "../services/VaccineService";
-import { vaccineSchema, updateVaccineSchema, addVaccineToPetSchema, VaccineInput, UpdateVaccineInput, AddVaccineToPetInput } from "../models/schemas/vaccineSchema";
+import { vaccineSchema, updateVaccineSchema, addVaccineToPetSchema, updatePetVaccineSchema, VaccineInput, UpdateVaccineInput, AddVaccineToPetInput, UpdatePetVaccineInput } from "../models/schemas/vaccineSchema";
 import { AppError, sendSuccess } from "../utils/errorHandler";
 
 const vaccineService = new VaccineService();
@@ -64,6 +64,22 @@ export const getVaccineDetails = async (
 
 	const details = await vaccineService.getVaccineDetails(vaccineId, petId, request.authenticatedUser.userId);
 	sendSuccess(reply, details);
+};
+
+export const updatePetVaccine = async (
+	request: FastifyRequest<{
+		Params: {
+			vaccineId: string;
+			petId: string;
+		};
+	}>,
+	reply: FastifyReply,
+) => {
+	const { vaccineId, petId } = request.params;
+	const data = updatePetVaccineSchema.parse(request.body) as UpdatePetVaccineInput;
+
+	const result = await vaccineService.updatePetVaccine(vaccineId, petId, request.authenticatedUser.userId, data);
+	sendSuccess(reply, result);
 };
 
 export const getPetVaccinations = async (request: FastifyRequest<{ Params: { petId: string } }>, reply: FastifyReply) => {

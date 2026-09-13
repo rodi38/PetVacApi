@@ -1,8 +1,8 @@
 // src/routes/vaccineRouter.ts
 import { FastifyInstance } from "fastify";
-import { createVaccine, getAllVaccines, getVaccineById, deleteVaccine, updateVaccine, addVaccineToPet, getPetVaccinations, getPetVaccinesCount, getVaccineDetails, deletePetVaccine } from "../controllers/vaccineController";
+import { createVaccine, getAllVaccines, getVaccineById, deleteVaccine, updateVaccine, addVaccineToPet, updatePetVaccine, getPetVaccinations, getPetVaccinesCount, getVaccineDetails, deletePetVaccine } from "../controllers/vaccineController";
 import { authenticate } from "../middleware/authMiddleware";
-import { vaccineSchema, updateVaccineSchema, addVaccineToPetSchema } from "../models/schemas/vaccineSchema";
+import { vaccineSchema, updateVaccineSchema, addVaccineToPetSchema, updatePetVaccineSchema } from "../models/schemas/vaccineSchema";
 import { toSwaggerSchema, objectIdParam, objectIdParams, successEnvelopeSchema, errorEnvelopeSchema } from "../utils/swaggerSchemas";
 
 export default async function (fastify: FastifyInstance) {
@@ -95,6 +95,17 @@ export default async function (fastify: FastifyInstance) {
 		{ name: "vaccineId", description: "ID do tipo de vacina" },
 		{ name: "petId", description: "ID do pet" },
 	]);
+
+	fastify.put("/:vaccineId/pets/:petId", {
+		schema: {
+			...base,
+			summary: "Atualiza um registro de vacinação de um pet (campos parciais)",
+			params: vaccinePetParams,
+			body: toSwaggerSchema(updatePetVaccineSchema),
+			response: { 200: successEnvelopeSchema(), 400: errorEnvelopeSchema, 404: errorEnvelopeSchema, ...authResponses },
+		},
+		handler: updatePetVaccine,
+	});
 
 	fastify.get("/:vaccineId/pets/:petId", {
 		schema: {

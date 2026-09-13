@@ -46,6 +46,38 @@ export const addVaccineToPetSchema = z
 			path: ["nextDoseDate"],
 		},
 	);
+export const updatePetVaccineSchema = z
+	.object({
+		vaccinationDate: z.preprocess(
+			(arg) => (typeof arg === "string" ? new Date(arg) : arg),
+			z
+				.date({
+					invalid_type_error: "Formato de data inválido",
+				})
+				.max(new Date(), "Data de vacinação não pode ser no futuro"),
+		).optional(),
+
+		notes: z.string().max(1000, "Anotações não podem exceder 1000 caracteres").optional(),
+
+		veterinarian: z.string().min(4, "Nome do veterinário deve ter pelo menos 4 caracteres").max(100, "Nome do veterinário não pode exceder 100 caracteres").optional(),
+
+		clinic: z.string().min(3, "Nome da clínica deve ter pelo menos 3 caracteres").max(100, "Nome da clínica não pode exceder 100 caracteres").optional(),
+
+		nextDoseDate: z.preprocess((arg) => (typeof arg === "string" ? new Date(arg) : arg), z.date().optional()),
+	})
+	.refine(
+		(data) => {
+			if (data.nextDoseDate && data.vaccinationDate) {
+				return data.nextDoseDate > data.vaccinationDate;
+			}
+			return true;
+		},
+		{
+			message: "Data da próxima dose deve ser posterior à data de vacinação",
+			path: ["nextDoseDate"],
+		},
+	);
+
 export interface PetVaccineDetails {
 	_id: ObjectId;
 	petId: ObjectId;
@@ -62,3 +94,4 @@ export interface PetVaccineDetails {
 export type VaccineInput = z.infer<typeof vaccineSchema>;
 export type UpdateVaccineInput = z.infer<typeof updateVaccineSchema>;
 export type AddVaccineToPetInput = z.infer<typeof addVaccineToPetSchema>;
+export type UpdatePetVaccineInput = z.infer<typeof updatePetVaccineSchema>;

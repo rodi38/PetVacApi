@@ -3,6 +3,7 @@ import { AppDataSource } from "../config/typeorm";
 import { Pet } from "../models/entities/Pet.Entity";
 import { ObjectId } from "mongodb";
 import { PetVaccine } from "../models/entities/PetVaccine.Entity";
+import { logger } from "../config/logger";
 
 export class PetService {
 	private petRepository: MongoRepository<Pet>;
@@ -42,7 +43,7 @@ export class PetService {
 			const result = await this.petRepository.delete(id);
 			return result.affected !== 0;
 		} catch (error) {
-			console.error("Error deleting pet and related records:", error);
+			logger.error(error, "Error deleting pet and related records");
 			throw error;
 		}
 	}

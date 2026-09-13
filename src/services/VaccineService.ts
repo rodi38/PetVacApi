@@ -5,7 +5,8 @@ import { Pet } from "../models/entities/Pet.Entity";
 import { PetVaccine } from "../models/entities/PetVaccine.Entity";
 import { ObjectId } from "mongodb";
 import { AppError } from "../utils/errorHandler";
-import { AddVaccineToPetInput } from "../models/schemas/vaccineSchema";
+import { AddVaccineToPetInput, UpdatePetVaccineInput } from "../models/schemas/vaccineSchema";
+import { logger } from "../config/logger";
 
 export class VaccineService {
 	private vaccineRepository: MongoRepository<Vaccine>;
@@ -159,6 +160,25 @@ export class VaccineService {
 		return count;
 	}
 
+	async updatePetVaccine(vaccineId: string, petId: string, ownerId: ObjectId, data: UpdatePetVaccineInput): Promise<PetVaccine> {
+		await this.findOwnedPetOrThrow(petId, ownerId);
+
+		const petVaccine = await this.petVaccineRepository.findOne({
+			where: {
+				petId: new ObjectId(petId),
+				vaccineId: new ObjectId(vaccineId),
+			},
+		});
+
+		if (!petVaccine) {
+			throw new AppError("Registro de vacinação não encontrado", 404, "VACCINATION_NOT_FOUND");
+		}
+
+		await this.petVaccineRepository.update(petVaccine._id, data);
+
+		return (await this.petVaccineRepository.findOneBy({ _id: petVaccine._id }))!;
+	}
+
 	async deletePetVaccine(vaccineId: string, petId: string, ownerId: ObjectId): Promise<boolean> {
 		await this.findOwnedPetOrThrow(petId, ownerId);
 
@@ -198,7 +218,7 @@ export class VaccineService {
 				vaccineId: new ObjectId(id),
 			});
 
-			console.log(`Deleted ${deleteVaccinationsResult.deletedCount} vaccination records`);
+			logger.info(`Deleted ${deleteVaccinationsResult.deletedCount} vaccination records`);
 
 			// Depois deletar a vacina
 			const deleteVaccineResult = await this.vaccineRepository.deleteOne({
@@ -207,7 +227,7 @@ export class VaccineService {
 
 			return deleteVaccineResult.deletedCount > 0;
 		} catch (error) {
-			console.error("Error deleting vaccine and related records:", error);
+			logger.error(error, "Error deleting vaccine and related records");
 			throw error;
 		}
 	}

@@ -1,5 +1,7 @@
 import { FastifyReply } from "fastify";
+import { FastifySchemaValidationError } from "fastify/types/schema";
 import { ZodError } from "zod";
+import { logger } from "../config/logger";
 
 export class AppError extends Error {
     constructor(
@@ -39,6 +41,22 @@ export function handleError(error: unknown, reply: FastifyReply) {
         });
     }
 
+    // Erros de validação dos parâmetros/query de rota, feitos pelo Ajv do Fastify
+    // (o corpo da requisição é validado pelo Zod acima). Convertidos para o mesmo
+    // formato {field, message} usado no resto da API, em vez da mensagem crua do Ajv.
+    const validation = (error as { validation?: FastifySchemaValidationError[] }).validation;
+    if (validation) {
+        const formattedErrors = validation.map((err) => ({
+            field: err.instancePath.replace(/^\//, "") || err.params?.missingProperty || "",
+            message: err.message ?? "Valor inválido",
+        }));
+        return reply.code(400).send({
+            success: false,
+            data: null,
+            error: { message: "Erro de validação", details: formattedErrors },
+        });
+    }
+
     // Erros conhecidos do próprio Fastify/plugins (rate-limit, payload/JSON malformado,
     // etc.) já vêm com um statusCode de cliente (4xx) e mensagem segura para expor.
     const statusCode = (error as { statusCode?: number })?.statusCode;
@@ -54,7 +72,7 @@ export function handleError(error: unknown, reply: FastifyReply) {
     // Erros genéricos/inesperados (driver do Mongo, TypeORM, etc.): nunca ecoar
     // error.message ao cliente, pois pode vazar detalhes internos de implementação,
     // e sempre como 500 — não é uma falha do cliente.
-    console.error(error);
+    logger.error(error);
     return reply.code(500).send({
         success: false,
         data: null,

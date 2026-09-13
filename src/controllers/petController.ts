@@ -1,7 +1,6 @@
 import { FastifyRequest, FastifyReply } from "fastify";
 import { PetService } from "../services/PetService";
 import { petSchema, updatePetSchema, PetInput, UpdatePetInput } from "../models/schemas/petSchema";
-import { ZodError } from "zod";
 
 import { handleError, AppError, sendSuccess } from "../utils/errorHandler";
 import { ObjectId } from "mongodb";

@@ -2,8 +2,6 @@ import { FastifyRequest, FastifyReply } from "fastify";
 import { UserService } from "../services/UserService";
 import { registerUserSchema, loginUserSchema, RegisterUserInput, LoginUserInput, UpdateUserInput, updateUserSchema } from "../models/schemas/userSchema";
 import { handleError, AppError, sendSuccess } from "../utils/errorHandler";
-
-import { ZodError } from "zod";
 import { User } from "../models/entities/User.Entity";
 
 const userService = new UserService();
@@ -40,12 +38,8 @@ export const updateUser = async (
 	reply: FastifyReply,
 ) => {
 	try {
-		console.log(request.params);
-		console.log(request.body);
-
 		const { userId } = request.params;
 		const updateData = updateUserSchema.parse(request.body);
-		console.log(updateData);
 
 		// Agora usando authenticatedUser ao invés de user
 		if (request.authenticatedUser.userId.toString() !== userId) {

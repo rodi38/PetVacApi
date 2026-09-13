@@ -6,7 +6,6 @@ import jwt from "jsonwebtoken";
 import { AppError } from "../utils/errorHandler";
 import { ObjectId } from "mongodb";
 import { UpdateUserInput } from "../models/schemas/userSchema";
-import { log } from "console";
 import { env } from "../config/env";
 
 export class UserService {
@@ -47,7 +46,6 @@ export class UserService {
 
 	async update(userId: string, updateData: UpdateUserInput): Promise<User> {
 		const user = await this.userRepository.findOneBy({ _id: new ObjectId(userId) });
-		console.log(user);
 
 		if (!user) {
 			throw new AppError("Usuário não encontrado", 404, "USER_NOT_FOUND");

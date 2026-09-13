@@ -2,7 +2,6 @@ import { FastifyRequest, FastifyReply } from "fastify";
 import { VaccineService } from "../services/VaccineService";
 import { vaccineSchema, updateVaccineSchema, addVaccineToPetSchema, VaccineInput, UpdateVaccineInput, AddVaccineToPetInput } from "../models/schemas/vaccineSchema";
 import { handleError, AppError, sendSuccess } from "../utils/errorHandler";
-import { log } from "console";
 
 const vaccineService = new VaccineService();
 

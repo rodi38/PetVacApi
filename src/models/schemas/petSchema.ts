@@ -1,5 +1,4 @@
 import { z } from "zod";
-import { ObjectId } from "mongodb";
 
 export const petSchema = z.object({
 	name: z.string().min(1, "Nome do pet é obrigatório").max(50, "Nome do pet não pode exceder 50 caracteres").trim(),

@@ -3,7 +3,7 @@ import { FastifyInstance } from "fastify";
 import { registerUser, loginUser, updateUser } from "../controllers/userController";
 import { authenticate } from "../middleware/authMiddleware";
 import { registerUserSchema, loginUserSchema, updateUserSchema } from "../models/schemas/userSchema";
-import { toSwaggerSchema, objectIdParam } from "../utils/swaggerSchemas";
+import { toSwaggerSchema, objectIdParam, successEnvelopeSchema, errorEnvelopeSchema } from "../utils/swaggerSchemas";
 
 export default async function (fastify: FastifyInstance) {
 	fastify.post("/register", {
@@ -11,8 +11,11 @@ export default async function (fastify: FastifyInstance) {
 			tags: ["auth"],
 			summary: "Cria um novo usuário",
 			body: toSwaggerSchema(registerUserSchema),
+			response: {
+				201: successEnvelopeSchema(),
+				400: errorEnvelopeSchema,
+			},
 		},
-		attachValidation: true,
 		handler: registerUser,
 	});
 
@@ -21,8 +24,12 @@ export default async function (fastify: FastifyInstance) {
 			tags: ["auth"],
 			summary: "Autentica um usuário e retorna um token JWT",
 			body: toSwaggerSchema(loginUserSchema),
+			response: {
+				200: successEnvelopeSchema(),
+				400: errorEnvelopeSchema,
+				401: errorEnvelopeSchema,
+			},
 		},
-		attachValidation: true,
 		handler: loginUser,
 	});
 
@@ -34,8 +41,13 @@ export default async function (fastify: FastifyInstance) {
 			security: [{ bearerAuth: [] }],
 			params: objectIdParam("userId", "ID do usuário"),
 			body: toSwaggerSchema(updateUserSchema),
+			response: {
+				200: successEnvelopeSchema(),
+				400: errorEnvelopeSchema,
+				401: errorEnvelopeSchema,
+				403: errorEnvelopeSchema,
+			},
 		},
-		attachValidation: true,
 		handler: updateUser,
 	});
 }

@@ -14,6 +14,45 @@ export function toSwaggerSchema(schema: z.ZodTypeAny) {
 	return jsonSchema;
 }
 
+// Schemas de resposta usados só pela documentação do Swagger, refletindo o
+// envelope { success, data, error } que toda rota da API de fato retorna.
+export const errorEnvelopeSchema = {
+	type: "object",
+	properties: {
+		success: { type: "boolean", enum: [false] },
+		data: { type: "null" },
+		error: {
+			type: "object",
+			properties: {
+				message: { type: "string" },
+				code: { type: "string" },
+				details: {
+					type: "array",
+					items: {
+						type: "object",
+						properties: {
+							field: { type: "string" },
+							message: { type: "string" },
+						},
+					},
+				},
+			},
+			required: ["message"],
+		},
+	},
+};
+
+export function successEnvelopeSchema(data: Record<string, unknown> = {}) {
+	return {
+		type: "object",
+		properties: {
+			success: { type: "boolean", enum: [true] },
+			data,
+			error: { type: "null" },
+		},
+	};
+}
+
 export function objectIdParam(name: string, description: string) {
 	return objectIdParams([{ name, description }]);
 }

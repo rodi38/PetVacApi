@@ -108,11 +108,6 @@ export class VaccineService {
 			throw new AppError("Vaccination record not found for this pet", 404, "VACCINATION_NOT_FOUND");
 		}
 
-		console.log({
-			vaccine,
-			petVaccine,
-		});
-
 		return {
 			vaccine,
 			petVaccine,

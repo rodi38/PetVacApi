@@ -17,7 +17,7 @@ import petRouter from "./routes/petRouter";
 import vaccineRouter from "./routes/vaccineRouter";
 
 const app = Fastify({
-	logger: true,
+	logger: process.env.NODE_ENV !== "test",
 	// A validação de entrada "de verdade" é feita via Zod nos controllers;
 	// os schemas nas rotas servem apenas para documentação no Swagger,
 	// então desativamos coerção/remoção automática de propriedades do Ajv.
@@ -34,10 +34,15 @@ const PORT = env.PORT;
 registerErrorHandler(app);
 
 app.register(helmet);
-app.register(rateLimit, {
-	max: 100,
-	timeWindow: "1 minute",
-});
+// Desativado nos testes: os limites de tentativa (5/min em auth, 100/min global)
+// já foram verificados manualmente e, em uma suíte que registra/loga vários
+// usuários em sequência, disparariam 429 sem relação com o que está sendo testado.
+if (process.env.NODE_ENV !== "test") {
+	app.register(rateLimit, {
+		max: 100,
+		timeWindow: "1 minute",
+	});
+}
 
 app.register(swagger, {
 	openapi: {
@@ -108,4 +113,10 @@ async function shutdown(signal: string) {
 process.on("SIGTERM", () => void shutdown("SIGTERM"));
 process.on("SIGINT", () => void shutdown("SIGINT"));
 
-start();
+// Evita subir o servidor de verdade quando este módulo é importado (ex.: pelos testes),
+// em vez de executado diretamente.
+if (require.main === module) {
+	start();
+}
+
+export { app };

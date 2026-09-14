@@ -2,7 +2,7 @@ import { FastifyRequest, FastifyReply } from "fastify";
 import jwt from "jsonwebtoken";
 import { ObjectId } from "mongodb";
 import { env } from "../config/env";
-import { AppDataSource } from "../config/typeorm";
+import { getDb } from "../config/mongo";
 import { User } from "../models/entities/User.Entity";
 
 interface JWTPayload {
@@ -28,7 +28,7 @@ export const authenticate = async (request: FastifyRequest, reply: FastifyReply)
 		const userId = new ObjectId(payload.userId);
 
 		// Um token emitido antes da última troca de senha não deve mais ser aceito.
-		const user = await AppDataSource.getMongoRepository(User).findOneBy({ _id: userId });
+		const user = await getDb().collection<User>("users").findOne({ _id: userId });
 		if (!user || (user.passwordChangedAt && payload.iat * 1000 < user.passwordChangedAt.getTime())) {
 			reply.code(401).send({ success: false, data: null, error: { message: "Token inválido ou expirado" } });
 			return;

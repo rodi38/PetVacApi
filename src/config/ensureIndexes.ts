@@ -1,9 +1,7 @@
-import { AppDataSource } from "./typeorm";
-import { User } from "../models/entities/User.Entity";
+import { getDb } from "./mongo";
 
-// O driver MongoDB do TypeORM ignora "synchronize" e não roda migrations reais,
-// então o índice único de @Unique(["email"]) nunca é criado no banco de verdade.
-// Criamos aqui manualmente para fechar a corrida de cadastro com e-mail duplicado.
+// Índices que o schema não cria sozinho (o driver nativo do mongodb, assim como o
+// driver do TypeORM antes dele, não roda migrations — precisa ser feito à mão no boot).
 export async function ensureIndexes(): Promise<void> {
-	await AppDataSource.getMongoRepository(User).createCollectionIndex("email", { unique: true });
+	await getDb().collection("users").createIndex("email", { unique: true });
 }

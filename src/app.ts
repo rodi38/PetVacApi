@@ -1,12 +1,10 @@
-import "reflect-metadata";
-
 import Fastify from "fastify";
 import swagger from "@fastify/swagger";
 import swaggerUi from "@fastify/swagger-ui";
 import helmet from "@fastify/helmet";
 import rateLimit from "@fastify/rate-limit";
 
-import { AppDataSource } from "./config/typeorm";
+import { connectMongo, disconnectMongo, isMongoConnected } from "./config/mongo";
 import { env } from "./config/env";
 import { registerErrorHandler } from "./middleware/errorMiddleware";
 import { ensureIndexes } from "./config/ensureIndexes";
@@ -83,8 +81,8 @@ const start = async () => {
 	try {
 		// Falha rápido no boot se o Mongo não estiver acessível, em vez de subir
 		// o servidor e só falhar depois, em cada requisição, silenciosamente.
-		await AppDataSource.initialize();
-		app.log.info("Data Source has been initialized!");
+		await connectMongo();
+		app.log.info("Conectado ao MongoDB");
 
 		try {
 			await ensureIndexes();
@@ -104,8 +102,8 @@ const start = async () => {
 async function shutdown(signal: string) {
 	app.log.info(`Received ${signal}, shutting down gracefully`);
 	await app.close();
-	if (AppDataSource.isInitialized) {
-		await AppDataSource.destroy();
+	if (isMongoConnected()) {
+		await disconnectMongo();
 	}
 	process.exit(0);
 }

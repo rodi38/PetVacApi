@@ -1,5 +1,8 @@
+import { ObjectId } from "mongodb";
 import { setupTestEnv, TestApp } from "./testApp";
 import { registerAndLogin } from "./helpers";
+import type { Pet } from "../src/models/entities/Pet.Entity";
+import type { PetVaccine } from "../src/models/entities/PetVaccine.Entity";
 
 describe("Soft-delete (histórico preservado)", () => {
 	let ctx: TestApp;
@@ -39,10 +42,8 @@ describe("Soft-delete (histórico preservado)", () => {
 		expect(getResponse.statusCode).toBe(404);
 
 		// Mas o documento continua no banco, só marcado.
-		const { AppDataSource } = await import("../src/config/typeorm");
-		const { Pet } = await import("../src/models/entities/Pet.Entity");
-		const { ObjectId } = await import("mongodb");
-		const rawPet = await AppDataSource.getMongoRepository(Pet).findOneBy({ _id: new ObjectId(petId) });
+		const { getDb } = await import("../src/config/mongo");
+		const rawPet = await getDb().collection<Pet>("pets").findOne({ _id: new ObjectId(petId) });
 
 		expect(rawPet).not.toBeNull();
 		expect(rawPet!.deletedAt).toBeInstanceOf(Date);
@@ -90,10 +91,8 @@ describe("Soft-delete (histórico preservado)", () => {
 		expect(listResponse.json().data.total).toBe(0);
 
 		// Mas o registro de vacinação continua no banco, preservando o histórico.
-		const { AppDataSource } = await import("../src/config/typeorm");
-		const { PetVaccine } = await import("../src/models/entities/PetVaccine.Entity");
-		const { ObjectId } = await import("mongodb");
-		const rawRecord = await AppDataSource.getMongoRepository(PetVaccine).findOneBy({ petId: new ObjectId(petId), vaccineId: new ObjectId(vaccineId) });
+		const { getDb } = await import("../src/config/mongo");
+		const rawRecord = await getDb().collection<PetVaccine>("pet_vaccines").findOne({ petId: new ObjectId(petId), vaccineId: new ObjectId(vaccineId) });
 
 		expect(rawRecord).not.toBeNull();
 		expect(rawRecord!.deletedAt).toBeInstanceOf(Date);

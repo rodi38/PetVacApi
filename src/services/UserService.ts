@@ -1,37 +1,37 @@
-import { MongoRepository } from "typeorm";
-import { AppDataSource } from "../config/typeorm";
+import { Collection, ObjectId } from "mongodb";
+import { getDb } from "../config/mongo";
 import { User } from "../models/entities/User.Entity";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import { AppError } from "../utils/errorHandler";
-import { ObjectId } from "mongodb";
 import { UpdateUserInput } from "../models/schemas/userSchema";
 import { env } from "../config/env";
 
 export class UserService {
-	private userRepository: MongoRepository<User>;
-
-	constructor() {
-		this.userRepository = AppDataSource.getMongoRepository(User);
+	private get collection(): Collection<User> {
+		return getDb().collection<User>("users");
 	}
 
 	async register(username: string, email: string, password: string): Promise<User> {
-		const existingUser = await this.userRepository.findOne({
-			where: { email },
-		});
+		const existingUser = await this.collection.findOne({ email });
 		if (existingUser) {
 			throw new AppError("Usuário com este email já existe", 400, "USER_EXISTS");
 		}
 
 		const hashedPassword = await bcrypt.hash(password, 10);
-		const user = this.userRepository.create({
+		const now = new Date();
+		const user: User = {
+			_id: new ObjectId(),
 			username,
 			email,
 			password: hashedPassword,
-		});
+			createdAt: now,
+			updatedAt: now,
+		};
 
 		try {
-			return await this.userRepository.save(user);
+			await this.collection.insertOne(user);
+			return user;
 		} catch (error) {
 			// Se duas requisições passarem pelo findOne acima ao mesmo tempo, o índice
 			// único de "email" (ver ensureIndexes) rejeita a segunda inserção aqui.
@@ -43,7 +43,7 @@ export class UserService {
 	}
 
 	async login(email: string, password: string): Promise<{ user: User; token: string }> {
-		const user = await this.userRepository.findOne({ where: { email } });
+		const user = await this.collection.findOne({ email });
 		if (!user || !(await bcrypt.compare(password, user.password))) {
 			throw new AppError("Credenciais inválidas", 401, "INVALID_CREDENTIALS");
 		}
@@ -54,7 +54,8 @@ export class UserService {
 	}
 
 	async update(userId: string, updateData: UpdateUserInput): Promise<User> {
-		const user = await this.userRepository.findOneBy({ _id: new ObjectId(userId) });
+		const _id = new ObjectId(userId);
+		const user = await this.collection.findOne({ _id });
 
 		if (!user) {
 			throw new AppError("Usuário não encontrado", 404, "USER_NOT_FOUND");
@@ -62,9 +63,7 @@ export class UserService {
 
 		// Verifica email único se estiver sendo atualizado
 		if (updateData.email && updateData.email !== user.email) {
-			const existingUser = await this.userRepository.findOne({
-				where: { email: updateData.email },
-			});
+			const existingUser = await this.collection.findOne({ email: updateData.email });
 
 			if (existingUser) {
 				throw new AppError("Email já está em uso", 400, "EMAIL_IN_USE");
@@ -72,7 +71,7 @@ export class UserService {
 		}
 
 		// Criar objeto de atualização
-		let updateFields: Partial<User> = {};
+		const updateFields: Partial<User> = { updatedAt: new Date() };
 
 		// Copiar campos básicos se existirem
 		if (updateData.username) updateFields.username = updateData.username;
@@ -93,10 +92,10 @@ export class UserService {
 		}
 
 		// Atualiza o usuário
-		await this.userRepository.update({ _id: new ObjectId(userId) }, updateFields);
+		await this.collection.updateOne({ _id }, { $set: updateFields });
 
 		// Retorna o usuário atualizado
-		return this.userRepository.findOneBy({ _id: new ObjectId(userId) }) as Promise<User>;
+		return (await this.collection.findOne({ _id }))!;
 	}
 
 	private generateToken(userId: string): string {

@@ -1,6 +1,7 @@
 import { FastifyRequest, FastifyReply } from "fastify";
 import { PetService } from "../services/PetService";
 import { petSchema, updatePetSchema, PetInput, UpdatePetInput } from "../models/schemas/petSchema";
+import { paginationQuerySchema, toPaginatedResult } from "../models/schemas/paginationSchema";
 
 import { AppError, sendSuccess } from "../utils/errorHandler";
 import { ObjectId } from "mongodb";
@@ -17,15 +18,32 @@ async function findOwnedPetOrThrow(id: string, ownerId: ObjectId): Promise<Pet> 
 	return pet;
 }
 
+// A idade não é mais armazenada — é derivada de birthDate a cada resposta, para não
+// ficar desatualizada com o tempo.
+function calculateAge(birthDate: Date): number {
+	const today = new Date();
+	let age = today.getFullYear() - birthDate.getFullYear();
+	const hasHadBirthdayThisYear = today.getMonth() > birthDate.getMonth() || (today.getMonth() === birthDate.getMonth() && today.getDate() >= birthDate.getDate());
+	if (!hasHadBirthdayThisYear) {
+		age--;
+	}
+	return age;
+}
+
+function toPetResponse(pet: Pet) {
+	return { ...pet, age: calculateAge(pet.birthDate) };
+}
+
 export const createPet = async (request: FastifyRequest, reply: FastifyReply) => {
 	const petData = petSchema.parse(request.body) as PetInput;
 	const pet = await petService.create({ ...petData, owner: request.authenticatedUser.userId });
-	sendSuccess(reply, pet, 201);
+	sendSuccess(reply, toPetResponse(pet), 201);
 };
 
 export const getAllPets = async (request: FastifyRequest, reply: FastifyReply) => {
-	const pets = await petService.getAllPetsByOwner(request.authenticatedUser.userId.toString());
-	sendSuccess(reply, pets);
+	const pagination = paginationQuerySchema.parse(request.query);
+	const { items, total } = await petService.getPetsByOwnerPaginated(request.authenticatedUser.userId.toString(), pagination.page, pagination.limit);
+	sendSuccess(reply, toPaginatedResult(items.map(toPetResponse), total, pagination));
 };
 
 export const getAllPetsByOwner = async (request: FastifyRequest<{ Params: { ownerId: string } }>, reply: FastifyReply) => {
@@ -33,14 +51,15 @@ export const getAllPetsByOwner = async (request: FastifyRequest<{ Params: { owne
 	if (request.authenticatedUser.userId.toString() !== ownerId) {
 		throw new AppError("Não autorizado a acessar pets de outro usuário", 403, "FORBIDDEN");
 	}
-	const pets = await petService.getAllPetsByOwner(ownerId);
-	sendSuccess(reply, pets);
+	const pagination = paginationQuerySchema.parse(request.query);
+	const { items, total } = await petService.getPetsByOwnerPaginated(ownerId, pagination.page, pagination.limit);
+	sendSuccess(reply, toPaginatedResult(items.map(toPetResponse), total, pagination));
 };
 
 export const getPetById = async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
 	const { id } = request.params;
 	const pet = await findOwnedPetOrThrow(id, request.authenticatedUser.userId);
-	sendSuccess(reply, pet);
+	sendSuccess(reply, toPetResponse(pet));
 };
 
 export const updatePet = async (
@@ -56,7 +75,7 @@ export const updatePet = async (
 	await findOwnedPetOrThrow(id, request.authenticatedUser.userId);
 
 	const updatedPet = await petService.update(id, updateData as Partial<Pet>);
-	sendSuccess(reply, updatedPet);
+	sendSuccess(reply, toPetResponse(updatedPet!));
 };
 
 export const deletePet = async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {

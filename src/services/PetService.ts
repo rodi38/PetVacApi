@@ -1,4 +1,4 @@
-import { MongoRepository } from "typeorm";
+import { MongoRepository, FindOptionsWhere } from "typeorm";
 import { AppDataSource } from "../config/typeorm";
 import { Pet } from "../models/entities/Pet.Entity";
 import { ObjectId } from "mongodb";
@@ -24,7 +24,7 @@ export class PetService {
 	}
 
 	async findById(id: string): Promise<Pet | null> {
-		return this.petRepository.findOneBy({ _id: new ObjectId(id) });
+		return this.petRepository.findOneBy({ _id: new ObjectId(id), deletedAt: null });
 	}
 
 	async update(id: string, petData: Partial<Pet>): Promise<Pet | null> {
@@ -32,15 +32,15 @@ export class PetService {
 		return this.findById(id);
 	}
 
+	// Soft-delete: mantém o pet e suas vacinações no banco (histórico de saúde
+	// animal), só marcados com deletedAt. Ver comentário na entidade Pet.
 	async delete(id: string): Promise<boolean> {
 		try {
-			// Primeiro, deletamos todos os registros de vacinas relacionados
-			await this.petVaccineRepository.deleteMany({
-				petId: new ObjectId(id),
-			});
+			const deletedAt = new Date();
 
-			// Depois, deletamos o pet
-			const result = await this.petRepository.delete(id);
+			await this.petVaccineRepository.updateMany({ petId: new ObjectId(id) }, { $set: { deletedAt } });
+
+			const result = await this.petRepository.update({ _id: new ObjectId(id), deletedAt: null } as unknown as FindOptionsWhere<Pet>, { deletedAt });
 			return result.affected !== 0;
 		} catch (error) {
 			logger.error(error, "Error deleting pet and related records");
@@ -48,11 +48,12 @@ export class PetService {
 		}
 	}
 
-	async getAllPetsByOwner(ownerId: string): Promise<Pet[]> {
-		return this.petRepository.find({
-			where: {
-				owner: new ObjectId(ownerId),
-			},
+	async getPetsByOwnerPaginated(ownerId: string, page: number, limit: number): Promise<{ items: Pet[]; total: number }> {
+		const [items, total] = await this.petRepository.findAndCount({
+			where: { owner: new ObjectId(ownerId), deletedAt: null },
+			skip: (page - 1) * limit,
+			take: limit,
 		});
+		return { items, total };
 	}
 }

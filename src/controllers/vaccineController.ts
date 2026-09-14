@@ -1,13 +1,15 @@
 import { FastifyRequest, FastifyReply } from "fastify";
 import { VaccineService } from "../services/VaccineService";
 import { vaccineSchema, updateVaccineSchema, addVaccineToPetSchema, updatePetVaccineSchema, VaccineInput, UpdateVaccineInput, AddVaccineToPetInput, UpdatePetVaccineInput } from "../models/schemas/vaccineSchema";
+import { paginationQuerySchema, toPaginatedResult } from "../models/schemas/paginationSchema";
 import { AppError, sendSuccess } from "../utils/errorHandler";
 
 const vaccineService = new VaccineService();
 
 export const getAllVaccines = async (request: FastifyRequest, reply: FastifyReply) => {
-	const vaccines = await vaccineService.findAll();
-	sendSuccess(reply, vaccines);
+	const pagination = paginationQuerySchema.parse(request.query);
+	const { items, total } = await vaccineService.findAllPaginated(pagination.page, pagination.limit);
+	sendSuccess(reply, toPaginatedResult(items, total, pagination));
 };
 
 export const createVaccine = async (request: FastifyRequest, reply: FastifyReply) => {
@@ -37,10 +39,11 @@ export const updateVaccine = async (request: FastifyRequest<{ Params: { id: stri
 	}
 };
 
-export const addVaccineToPet = async (request: FastifyRequest, reply: FastifyReply) => {
+export const addVaccineToPet = async (request: FastifyRequest<{ Params: { petId: string } }>, reply: FastifyReply) => {
+	const { petId } = request.params;
 	const data = addVaccineToPetSchema.parse(request.body) as AddVaccineToPetInput;
 
-	const result = await vaccineService.addVaccineToPet(data.vaccineId, data.petId, request.authenticatedUser.userId, {
+	const result = await vaccineService.addVaccineToPet(data.vaccineId, petId, request.authenticatedUser.userId, {
 		vaccinationDate: data.vaccinationDate,
 		notes: data.notes,
 		veterinarian: data.veterinarian,
@@ -84,12 +87,9 @@ export const updatePetVaccine = async (
 
 export const getPetVaccinations = async (request: FastifyRequest<{ Params: { petId: string } }>, reply: FastifyReply) => {
 	const { petId } = request.params;
-	const vaccinations = await vaccineService.findByPet(petId, request.authenticatedUser.userId);
-	sendSuccess(reply, {
-		petId,
-		vaccinations,
-		totalVaccinations: vaccinations.length,
-	});
+	const pagination = paginationQuerySchema.parse(request.query);
+	const { items, total } = await vaccineService.findByPet(petId, request.authenticatedUser.userId, pagination.page, pagination.limit);
+	sendSuccess(reply, { petId, ...toPaginatedResult(items, total, pagination) });
 };
 
 export const getPetVaccinesCount = async (request: FastifyRequest<{ Params: { petId: string } }>, reply: FastifyReply) => {

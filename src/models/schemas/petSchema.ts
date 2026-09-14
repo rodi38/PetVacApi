@@ -11,14 +11,16 @@ export const petSchema = z.object({
 		errorMap: () => ({ message: "Gênero deve ser 'male', 'female' ou 'other'" }),
 	}),
 
-	age: z
-		.number({
-			required_error: "Idade é obrigatória",
-			invalid_type_error: "Idade deve ser um número",
-		})
-		.int("Idade deve ser um número inteiro")
-		.positive("Idade deve ser positiva")
-		.max(50, "Por favor, verifique o valor da idade"),
+	birthDate: z.preprocess(
+		(arg) => (typeof arg === "string" ? new Date(arg) : arg),
+		z
+			.date({
+				required_error: "Data de nascimento é obrigatória",
+				invalid_type_error: "Formato de data inválido",
+			})
+			.max(new Date(), "Data de nascimento não pode ser no futuro")
+			.min(new Date(new Date().setFullYear(new Date().getFullYear() - 50)), "Por favor, verifique a data de nascimento"),
+	),
 });
 
 // export const updatePetSchema = petSchema.partial().extend({

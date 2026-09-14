@@ -33,6 +33,11 @@ class PetVaccine {
 
 	@UpdateDateColumn()
 	updatedAt: Date;
+
+	// Soft-delete manual: ver comentário equivalente em Vaccine.Entity.ts.
+	// Aqui isso preserva o histórico de vacinação mesmo depois de "apagado".
+	@Column({ type: "date", nullable: true })
+	deletedAt?: Date | null;
 }
 
 export { PetVaccine };

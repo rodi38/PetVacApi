@@ -1,10 +1,12 @@
 // src/routes/vaccineRouter.ts
 import { FastifyInstance } from "fastify";
-import { createVaccine, getAllVaccines, getVaccineById, deleteVaccine, updateVaccine, addVaccineToPet, updatePetVaccine, getPetVaccinations, getPetVaccinesCount, getVaccineDetails, deletePetVaccine } from "../controllers/vaccineController";
+import { createVaccine, getAllVaccines, getVaccineById, deleteVaccine, updateVaccine } from "../controllers/vaccineController";
 import { authenticate } from "../middleware/authMiddleware";
-import { vaccineSchema, updateVaccineSchema, addVaccineToPetSchema, updatePetVaccineSchema } from "../models/schemas/vaccineSchema";
-import { toSwaggerSchema, objectIdParam, objectIdParams, successEnvelopeSchema, errorEnvelopeSchema } from "../utils/swaggerSchemas";
+import { vaccineSchema, updateVaccineSchema } from "../models/schemas/vaccineSchema";
+import { toSwaggerSchema, objectIdParam, successEnvelopeSchema, errorEnvelopeSchema } from "../utils/swaggerSchemas";
 
+// Catálogo de tipos de vacina. O relacionamento pet↔vacina (registrar, listar,
+// atualizar e apagar uma vacinação aplicada) mora em petRouter.ts, sob /pets/:petId/vaccinations.
 export default async function (fastify: FastifyInstance) {
 	// Adicionar autenticação para todas as rotas
 	fastify.addHook("preHandler", authenticate);
@@ -12,7 +14,6 @@ export default async function (fastify: FastifyInstance) {
 	const base = { tags: ["vaccines"], security: [{ bearerAuth: [] }] };
 	const authResponses = { 401: errorEnvelopeSchema };
 
-	// Rotas de vacinas
 	fastify.post("/", {
 		schema: {
 			...base,
@@ -57,73 +58,5 @@ export default async function (fastify: FastifyInstance) {
 			response: { 204: { type: "null" }, 404: errorEnvelopeSchema, ...authResponses },
 		},
 		handler: deleteVaccine,
-	});
-
-	// Rotas de relacionamento pet-vacina — ordem consistente: quando os dois IDs
-	// aparecem na URL, vaccineId sempre vem antes de "pets/:petId".
-	fastify.get("/pets/:petId", {
-		schema: {
-			...base,
-			summary: "Lista as vacinações de um pet",
-			params: objectIdParam("petId", "ID do pet"),
-			response: { 200: successEnvelopeSchema(), ...authResponses },
-		},
-		handler: getPetVaccinations,
-	});
-
-	fastify.get("/pets/:petId/count", {
-		schema: {
-			...base,
-			summary: "Retorna a quantidade de vacinações de um pet",
-			params: objectIdParam("petId", "ID do pet"),
-			response: { 200: successEnvelopeSchema(), ...authResponses },
-		},
-		handler: getPetVaccinesCount,
-	});
-
-	fastify.post("/pets", {
-		schema: {
-			...base,
-			summary: "Registra a aplicação de uma vacina em um pet",
-			body: toSwaggerSchema(addVaccineToPetSchema),
-			response: { 201: successEnvelopeSchema(), 400: errorEnvelopeSchema, ...authResponses },
-		},
-		handler: addVaccineToPet,
-	});
-
-	const vaccinePetParams = objectIdParams([
-		{ name: "vaccineId", description: "ID do tipo de vacina" },
-		{ name: "petId", description: "ID do pet" },
-	]);
-
-	fastify.put("/:vaccineId/pets/:petId", {
-		schema: {
-			...base,
-			summary: "Atualiza um registro de vacinação de um pet (campos parciais)",
-			params: vaccinePetParams,
-			body: toSwaggerSchema(updatePetVaccineSchema),
-			response: { 200: successEnvelopeSchema(), 400: errorEnvelopeSchema, 404: errorEnvelopeSchema, ...authResponses },
-		},
-		handler: updatePetVaccine,
-	});
-
-	fastify.get("/:vaccineId/pets/:petId", {
-		schema: {
-			...base,
-			summary: "Busca os detalhes de uma vacinação de um pet",
-			params: vaccinePetParams,
-			response: { 200: successEnvelopeSchema(), 404: errorEnvelopeSchema, ...authResponses },
-		},
-		handler: getVaccineDetails,
-	});
-
-	fastify.delete("/:vaccineId/pets/:petId", {
-		schema: {
-			...base,
-			summary: "Remove o registro de vacinação de um pet",
-			params: vaccinePetParams,
-			response: { 204: { type: "null" }, 404: errorEnvelopeSchema, ...authResponses },
-		},
-		handler: deletePetVaccine,
 	});
 }

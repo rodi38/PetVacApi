@@ -17,7 +17,7 @@ describe("Checagem de posse (IDOR)", () => {
 			method: "POST",
 			url: "/api/v1/pets",
 			headers: { authorization: `Bearer ${token}` },
-			payload: { name: "Rex", petType: "dog", breed: "vira-lata", gender: "male", age: 3 },
+			payload: { name: "Rex", petType: "dog", breed: "vira-lata", gender: "male", birthDate: new Date("2021-01-01").toISOString() },
 		});
 		return response.json().data._id as string;
 	}
@@ -34,7 +34,7 @@ describe("Checagem de posse (IDOR)", () => {
 			headers: { authorization: `Bearer ${userB.token}` },
 		});
 
-		expect(response.json().data).toHaveLength(0);
+		expect(response.json().data.items).toHaveLength(0);
 	});
 
 	it("um usuário recebe 404 (não 403) ao buscar pet de outro pelo ID", async () => {
@@ -89,7 +89,7 @@ describe("Checagem de posse (IDOR)", () => {
 			method: "POST",
 			url: "/api/v1/pets",
 			headers: { authorization: `Bearer ${userA.token}` },
-			payload: { name: "Bidu", petType: "dog", breed: "poodle", gender: "male", age: 2, owner: someoneElseId },
+			payload: { name: "Bidu", petType: "dog", breed: "poodle", gender: "male", birthDate: new Date("2022-06-15").toISOString(), owner: someoneElseId },
 		});
 
 		expect(response.statusCode).toBe(201);
@@ -103,7 +103,7 @@ describe("Checagem de posse (IDOR)", () => {
 
 		const response = await ctx.app.inject({
 			method: "GET",
-			url: `/api/v1/vaccines/pets/${petId}`,
+			url: `/api/v1/pets/${petId}/vaccinations`,
 			headers: { authorization: `Bearer ${userB.token}` },
 		});
 

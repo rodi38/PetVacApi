@@ -18,8 +18,8 @@ class Pet {
 	@Column({ type: "text" })
 	gender!: string;
 
-	@Column({ type: "number" })
-	age!: number;
+	@Column({ type: "date" })
+	birthDate!: Date;
 
 	@Column("objectId")
 	owner!: ObjectId;
@@ -29,6 +29,10 @@ class Pet {
 
 	@UpdateDateColumn()
 	updatedAt: Date;
+
+	// Soft-delete manual: ver comentário equivalente em Vaccine.Entity.ts.
+	@Column({ type: "date", nullable: true })
+	deletedAt?: Date | null;
 }
 
 export { Pet };

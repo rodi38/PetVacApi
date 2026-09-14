@@ -12,8 +12,6 @@ export const updateVaccineSchema = vaccineSchema.partial();
 
 export const addVaccineToPetSchema = z
 	.object({
-		petId: z.string().regex(/^[0-9a-fA-F]{24}$/, "Formato de ID do pet inválido"),
-
 		vaccineId: z.string().regex(/^[0-9a-fA-F]{24}$/, "Formato de ID da vacina inválido"),
 
 		vaccinationDate: z.preprocess(

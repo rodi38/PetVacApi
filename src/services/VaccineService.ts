@@ -215,28 +215,23 @@ export class VaccineService {
 	// Soft-delete: a vacina e seus registros de vacinação continuam no banco,
 	// só marcados com deletedAt (ver comentário nas entidades Vaccine e PetVaccine).
 	async deleteVaccine(id: string): Promise<boolean> {
-		try {
-			// Verificar se a vacina existe
-			const vaccine = await this.vaccineRepository.findOneBy({
-				_id: new ObjectId(id),
-				deletedAt: null,
-			});
+		// Verificar se a vacina existe
+		const vaccine = await this.vaccineRepository.findOneBy({
+			_id: new ObjectId(id),
+			deletedAt: null,
+		});
 
-			if (!vaccine) {
-				throw new AppError("Vacina não encontrada", 404, "VACCINE_NOT_FOUND");
-			}
-
-			const deletedAt = new Date();
-
-			const updateVaccinationsResult = await this.petVaccineRepository.updateMany({ vaccineId: new ObjectId(id) }, { $set: { deletedAt } });
-			logger.info(`Soft-deleted ${updateVaccinationsResult.modifiedCount} vaccination records`);
-
-			const updateVaccineResult = await this.vaccineRepository.update({ _id: new ObjectId(id), deletedAt: null } as unknown as FindOptionsWhere<Vaccine>, { deletedAt });
-
-			return updateVaccineResult.affected !== 0;
-		} catch (error) {
-			logger.error(error, "Error deleting vaccine and related records");
-			throw error;
+		if (!vaccine) {
+			throw new AppError("Vacina não encontrada", 404, "VACCINE_NOT_FOUND");
 		}
+
+		const deletedAt = new Date();
+
+		const updateVaccinationsResult = await this.petVaccineRepository.updateMany({ vaccineId: new ObjectId(id) }, { $set: { deletedAt } });
+		logger.info(`Soft-deleted ${updateVaccinationsResult.modifiedCount} vaccination records`);
+
+		const updateVaccineResult = await this.vaccineRepository.update({ _id: new ObjectId(id), deletedAt: null } as unknown as FindOptionsWhere<Vaccine>, { deletedAt });
+
+		return updateVaccineResult.affected !== 0;
 	}
 }

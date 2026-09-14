@@ -3,7 +3,6 @@ import { AppDataSource } from "../config/typeorm";
 import { Pet } from "../models/entities/Pet.Entity";
 import { ObjectId } from "mongodb";
 import { PetVaccine } from "../models/entities/PetVaccine.Entity";
-import { logger } from "../config/logger";
 
 export class PetService {
 	private petRepository: MongoRepository<Pet>;
@@ -35,17 +34,12 @@ export class PetService {
 	// Soft-delete: mantém o pet e suas vacinações no banco (histórico de saúde
 	// animal), só marcados com deletedAt. Ver comentário na entidade Pet.
 	async delete(id: string): Promise<boolean> {
-		try {
-			const deletedAt = new Date();
+		const deletedAt = new Date();
 
-			await this.petVaccineRepository.updateMany({ petId: new ObjectId(id) }, { $set: { deletedAt } });
+		await this.petVaccineRepository.updateMany({ petId: new ObjectId(id) }, { $set: { deletedAt } });
 
-			const result = await this.petRepository.update({ _id: new ObjectId(id), deletedAt: null } as unknown as FindOptionsWhere<Pet>, { deletedAt });
-			return result.affected !== 0;
-		} catch (error) {
-			logger.error(error, "Error deleting pet and related records");
-			throw error;
-		}
+		const result = await this.petRepository.update({ _id: new ObjectId(id), deletedAt: null } as unknown as FindOptionsWhere<Pet>, { deletedAt });
+		return result.affected !== 0;
 	}
 
 	async getPetsByOwnerPaginated(ownerId: string, page: number, limit: number): Promise<{ items: Pet[]; total: number }> {

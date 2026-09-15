@@ -4,11 +4,12 @@ export interface PetVaccine {
 	_id: ObjectId;
 	petId: ObjectId;
 	vaccineId: ObjectId;
-	vaccinationDate: Date;
+	// Datas de cada dose aplicada ou agendada (ordem cronológica crescente).
+	// Permite representar séries de doses e reforços de uma mesma vacina.
+	doses: Date[];
 	notes?: string;
 	veterinarian?: string;
 	clinic?: string;
-	nextDoseDate?: Date;
 	createdAt: Date;
 	updatedAt: Date;
 	// Soft-delete manual: ver comentário equivalente em Vaccine.Entity.ts.

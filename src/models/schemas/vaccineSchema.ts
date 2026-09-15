@@ -10,81 +10,49 @@ export const vaccineSchema = z.object({
 
 export const updateVaccineSchema = vaccineSchema.partial();
 
-export const addVaccineToPetSchema = z
-	.object({
-		vaccineId: z.string().regex(/^[0-9a-fA-F]{24}$/, "Formato de ID da vacina inválido"),
+const doseDateSchema = z.preprocess(
+	(arg) => (typeof arg === "string" ? new Date(arg) : arg),
+	z.date({
+		required_error: "Data da dose é obrigatória",
+		invalid_type_error: "Formato de data inválido",
+	}),
+);
 
-		vaccinationDate: z.preprocess(
-			(arg) => (typeof arg === "string" ? new Date(arg) : arg),
-			z
-				.date({
-					required_error: "Data de vacinação é obrigatória",
-					invalid_type_error: "Formato de data inválido",
-				})
-				.max(new Date(), "Data de vacinação não pode ser no futuro"),
-		),
+const dosesSchema = z
+	.array(doseDateSchema)
+	.min(1, "É necessário informar ao menos uma dose")
+	.refine((doses) => new Set(doses.map((date) => date.getTime())).size === doses.length, "Não pode haver doses com datas repetidas");
 
-		notes: z.string().max(1000, "Anotações não podem exceder 1000 caracteres").optional(),
+export const addVaccineToPetSchema = z.object({
+	vaccineId: z.string().regex(/^[0-9a-fA-F]{24}$/, "Formato de ID da vacina inválido"),
 
-		veterinarian: z.string().min(4, "Nome do veterinário deve ter pelo menos 4 caracteres").max(100, "Nome do veterinário não pode exceder 100 caracteres").optional(),
+	doses: dosesSchema,
 
-		clinic: z.string().min(3, "Nome da clínica deve ter pelo menos 3 caracteres").max(100, "Nome da clínica não pode exceder 100 caracteres").optional(),
+	notes: z.string().max(1000, "Anotações não podem exceder 1000 caracteres").optional(),
 
-		nextDoseDate: z.preprocess((arg) => (typeof arg === "string" ? new Date(arg) : arg), z.date().min(new Date(), "Data da próxima dose deve ser no futuro").optional()),
-	})
-	.refine(
-		(data) => {
-			if (data.nextDoseDate) {
-				return data.nextDoseDate > data.vaccinationDate;
-			}
-			return true;
-		},
-		{
-			message: "Data da próxima dose deve ser posterior à data de vacinação",
-			path: ["nextDoseDate"],
-		},
-	);
-export const updatePetVaccineSchema = z
-	.object({
-		vaccinationDate: z.preprocess(
-			(arg) => (typeof arg === "string" ? new Date(arg) : arg),
-			z
-				.date({
-					invalid_type_error: "Formato de data inválido",
-				})
-				.max(new Date(), "Data de vacinação não pode ser no futuro"),
-		).optional(),
+	veterinarian: z.string().min(4, "Nome do veterinário deve ter pelo menos 4 caracteres").max(100, "Nome do veterinário não pode exceder 100 caracteres").optional(),
 
-		notes: z.string().max(1000, "Anotações não podem exceder 1000 caracteres").optional(),
+	clinic: z.string().min(3, "Nome da clínica deve ter pelo menos 3 caracteres").max(100, "Nome da clínica não pode exceder 100 caracteres").optional(),
+});
 
-		veterinarian: z.string().min(4, "Nome do veterinário deve ter pelo menos 4 caracteres").max(100, "Nome do veterinário não pode exceder 100 caracteres").optional(),
+export const updatePetVaccineSchema = z.object({
+	doses: dosesSchema.optional(),
 
-		clinic: z.string().min(3, "Nome da clínica deve ter pelo menos 3 caracteres").max(100, "Nome da clínica não pode exceder 100 caracteres").optional(),
+	notes: z.string().max(1000, "Anotações não podem exceder 1000 caracteres").optional(),
 
-		nextDoseDate: z.preprocess((arg) => (typeof arg === "string" ? new Date(arg) : arg), z.date().optional()),
-	})
-	.refine(
-		(data) => {
-			if (data.nextDoseDate && data.vaccinationDate) {
-				return data.nextDoseDate > data.vaccinationDate;
-			}
-			return true;
-		},
-		{
-			message: "Data da próxima dose deve ser posterior à data de vacinação",
-			path: ["nextDoseDate"],
-		},
-	);
+	veterinarian: z.string().min(4, "Nome do veterinário deve ter pelo menos 4 caracteres").max(100, "Nome do veterinário não pode exceder 100 caracteres").optional(),
+
+	clinic: z.string().min(3, "Nome da clínica deve ter pelo menos 3 caracteres").max(100, "Nome da clínica não pode exceder 100 caracteres").optional(),
+});
 
 export interface PetVaccineDetails {
 	_id: ObjectId;
 	petId: ObjectId;
 	vaccineId: ObjectId;
-	vaccinationDate: Date;
+	doses: Date[];
 	notes?: string;
 	veterinarian?: string;
 	clinic?: string;
-	nextDoseDate?: Date;
 	createdAt: Date;
 	updatedAt: Date;
 }

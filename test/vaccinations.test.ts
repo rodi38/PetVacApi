@@ -38,7 +38,7 @@ describe("Vacinações de um pet (/pets/:petId/vaccinations)", () => {
 			method: "POST",
 			url: `/api/v1/pets/${petId}/vaccinations`,
 			headers: { authorization: `Bearer ${token}` },
-			payload: { vaccineId, vaccinationDate: new Date("2024-01-10").toISOString(), clinic: "Clínica Central" },
+			payload: { vaccineId, doses: [new Date("2024-01-10").toISOString()], clinic: "Clínica Central" },
 		});
 		expect(createResponse.statusCode).toBe(201);
 
@@ -79,5 +79,64 @@ describe("Vacinações de um pet (/pets/:petId/vaccinations)", () => {
 			headers: { authorization: `Bearer ${token}` },
 		});
 		expect(afterDelete.statusCode).toBe(404);
+	});
+
+	it("permite múltiplas doses (série + reforços), edição e remoção de doses", async () => {
+		const secondVaccineResponse = await ctx.app.inject({
+			method: "POST",
+			url: "/api/v1/vaccines",
+			headers: { authorization: `Bearer ${token}` },
+			payload: { name: "Antirrábica" },
+		});
+		const secondVaccineId = secondVaccineResponse.json().data._id;
+
+		const createResponse = await ctx.app.inject({
+			method: "POST",
+			url: `/api/v1/pets/${petId}/vaccinations`,
+			headers: { authorization: `Bearer ${token}` },
+			payload: {
+				vaccineId: secondVaccineId,
+				doses: [new Date("2024-01-10").toISOString(), new Date("2024-02-10").toISOString()],
+			},
+		});
+		expect(createResponse.statusCode).toBe(201);
+		expect(createResponse.json().data.doses).toHaveLength(2);
+
+		const updateResponse = await ctx.app.inject({
+			method: "PUT",
+			url: `/api/v1/pets/${petId}/vaccinations/${secondVaccineId}`,
+			headers: { authorization: `Bearer ${token}` },
+			payload: {
+				doses: [new Date("2024-01-10").toISOString(), new Date("2025-01-10").toISOString()],
+			},
+		});
+		expect(updateResponse.statusCode).toBe(200);
+		expect(updateResponse.json().data.doses).toHaveLength(2);
+		expect(new Date(updateResponse.json().data.doses[1]).toISOString()).toBe(new Date("2025-01-10").toISOString());
+
+		const singleDoseResponse = await ctx.app.inject({
+			method: "PUT",
+			url: `/api/v1/pets/${petId}/vaccinations/${secondVaccineId}`,
+			headers: { authorization: `Bearer ${token}` },
+			payload: { doses: [new Date("2024-01-10").toISOString()] },
+		});
+		expect(singleDoseResponse.statusCode).toBe(200);
+		expect(singleDoseResponse.json().data.doses).toHaveLength(1);
+
+		const emptyDosesResponse = await ctx.app.inject({
+			method: "PUT",
+			url: `/api/v1/pets/${petId}/vaccinations/${secondVaccineId}`,
+			headers: { authorization: `Bearer ${token}` },
+			payload: { doses: [] },
+		});
+		expect(emptyDosesResponse.statusCode).toBe(400);
+
+		const duplicateDoseResponse = await ctx.app.inject({
+			method: "PUT",
+			url: `/api/v1/pets/${petId}/vaccinations/${secondVaccineId}`,
+			headers: { authorization: `Bearer ${token}` },
+			payload: { doses: [new Date("2024-01-10").toISOString(), new Date("2024-01-10").toISOString()] },
+		});
+		expect(duplicateDoseResponse.statusCode).toBe(400);
 	});
 });

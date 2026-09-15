@@ -44,11 +44,10 @@ export const addVaccineToPet = async (request: FastifyRequest<{ Params: { petId:
 	const data = addVaccineToPetSchema.parse(request.body) as AddVaccineToPetInput;
 
 	const result = await vaccineService.addVaccineToPet(data.vaccineId, petId, request.authenticatedUser.userId, {
-		vaccinationDate: data.vaccinationDate,
+		doses: data.doses,
 		notes: data.notes,
 		veterinarian: data.veterinarian,
 		clinic: data.clinic,
-		nextDoseDate: data.nextDoseDate,
 	});
 
 	sendSuccess(reply, result, 201);

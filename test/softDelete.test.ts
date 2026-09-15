@@ -72,7 +72,7 @@ describe("Soft-delete (histórico preservado)", () => {
 			method: "POST",
 			url: `/api/v1/pets/${petId}/vaccinations`,
 			headers: { authorization: `Bearer ${token}` },
-			payload: { vaccineId, vaccinationDate: new Date("2023-05-01").toISOString() },
+			payload: { vaccineId, doses: [new Date("2023-05-01").toISOString()] },
 		});
 
 		const deleteResponse = await ctx.app.inject({

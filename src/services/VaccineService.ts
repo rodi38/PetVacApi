@@ -84,20 +84,17 @@ export class VaccineService {
 			throw new AppError("Esta vacina já está registrada para este pet", 400, "VACCINE_ALREADY_REGISTERED");
 		}
 
-		// Processar as datas
-		const vaccinationDate = new Date(data.vaccinationDate);
-		const nextDoseDate = data.nextDoseDate ? new Date(data.nextDoseDate) : undefined;
+		const doses = [...data.doses].sort((a, b) => a.getTime() - b.getTime());
 
 		const now = new Date();
 		const petVaccine: PetVaccine = {
 			_id: new ObjectId(),
 			petId: new ObjectId(petId),
 			vaccineId: new ObjectId(vaccineId),
-			vaccinationDate,
+			doses,
 			notes: data.notes,
 			veterinarian: data.veterinarian,
 			clinic: data.clinic,
-			nextDoseDate,
 			createdAt: now,
 			updatedAt: now,
 		};
@@ -134,7 +131,7 @@ export class VaccineService {
 		page: number,
 		limit: number,
 	): Promise<{
-		items: { vaccine: Vaccine; vaccinationDate: Date; notes?: string }[];
+		items: { vaccine: Vaccine; doses: Date[]; notes?: string }[];
 		total: number;
 	}> {
 		await this.findOwnedPetOrThrow(petId, ownerId);
@@ -158,7 +155,7 @@ export class VaccineService {
 
 				return {
 					vaccine: vaccine!,
-					vaccinationDate: pv.vaccinationDate,
+					doses: pv.doses,
 					notes: pv.notes,
 				};
 			}),
@@ -185,7 +182,10 @@ export class VaccineService {
 			throw new AppError("Registro de vacinação não encontrado", 404, "VACCINATION_NOT_FOUND");
 		}
 
-		await this.petVaccineCollection.updateOne({ _id: petVaccine._id }, { $set: { ...data, updatedAt: new Date() } });
+		const { doses, ...rest } = data;
+		const update = doses ? { ...rest, doses: [...doses].sort((a, b) => a.getTime() - b.getTime()) } : rest;
+
+		await this.petVaccineCollection.updateOne({ _id: petVaccine._id }, { $set: { ...update, updatedAt: new Date() } });
 
 		return (await this.petVaccineCollection.findOne({ _id: petVaccine._id }))!;
 	}

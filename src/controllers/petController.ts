@@ -30,8 +30,27 @@ function calculateAge(birthDate: Date): number {
 	return age;
 }
 
+// Para pets com menos de 1 ano, `age` (em anos) não é informativo o suficiente,
+// então também retornamos a idade em semanas ou meses.
+function calculateAgeDetail(birthDate: Date, age: number): { unit: "weeks" | "months"; value: number } | null {
+	if (age >= 1) {
+		return null;
+	}
+	const today = new Date();
+	const diffDays = Math.floor((today.getTime() - birthDate.getTime()) / (1000 * 60 * 60 * 24));
+	if (diffDays < 30) {
+		return { unit: "weeks", value: Math.floor(diffDays / 7) };
+	}
+	let months = (today.getFullYear() - birthDate.getFullYear()) * 12 + (today.getMonth() - birthDate.getMonth());
+	if (today.getDate() < birthDate.getDate()) {
+		months--;
+	}
+	return { unit: "months", value: months };
+}
+
 function toPetResponse(pet: Pet) {
-	return { ...pet, age: calculateAge(pet.birthDate) };
+	const age = calculateAge(pet.birthDate);
+	return { ...pet, age, ageDetail: calculateAgeDetail(pet.birthDate, age) };
 }
 
 export const createPet = async (request: FastifyRequest, reply: FastifyReply) => {
